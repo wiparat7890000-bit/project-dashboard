@@ -14,6 +14,7 @@ import { PRIORITY_STYLE, SWATCH_COLORS } from "@/lib/constants";
 import { PRIORITIES, type Priority } from "@/lib/types";
 import { colorFor } from "@/lib/utils";
 import { useDashboard, type ProjectInput } from "../DashboardContext";
+import DateField from "../ui/DateField";
 import FormDialog, { FieldLabel, LinkAction } from "./FormDialog";
 
 interface Props {
@@ -83,11 +84,11 @@ export default function ProjectDialog({ open, projectId, onClose }: Props) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <FieldLabel>Start Date *</FieldLabel>
-          <TextField fullWidth size="small" type="date" value={form.startDate} onChange={(e) => set("startDate", e.target.value)} />
+          <DateField label="Start date" value={form.startDate} onChange={(v) => set("startDate", v)} />
         </div>
         <div>
           <FieldLabel>End Date *</FieldLabel>
-          <TextField fullWidth size="small" type="date" value={form.endDate} onChange={(e) => set("endDate", e.target.value)} />
+          <DateField label="End date" value={form.endDate} min={form.startDate || undefined} onChange={(v) => set("endDate", v)} />
         </div>
       </div>
 

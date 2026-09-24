@@ -14,7 +14,6 @@ import { STATUSES, type Project, type ProjectUpdate } from "@/lib/types";
 import {
   avgProgress,
   formatDate,
-  formatLongDate,
   getProjectOverview,
   groupByPhase,
   hasIssue,
@@ -123,7 +122,7 @@ function ProjectHeader({ project, overview }: { project: Project; overview: Proj
       ),
       hint: isAuto
         ? "No update saved yet — status is suggested from task progress. Save an update to set it."
-        : `Set by the update of ${formatLongDate(latest?.updateDate)}`,
+        : `Set by the update of ${formatDate(latest?.updateDate)}`,
     },
     {
       label: "Health",
@@ -402,7 +401,7 @@ function LatestUpdate({ overview, sections }: { overview: ProjectOverview; secti
       id="latest"
       title="Latest Project Update"
       sections={sections}
-      summary={u ? `${formatLongDate(u.updateDate)} · ${u.projectStatus} · ${u.progress}%` : "No updates yet"}
+      summary={u ? `${formatDate(u.updateDate)} · ${u.projectStatus} · ${u.progress}%` : "No updates yet"}
     >
       {!u ? (
         <Panel className="py-10 text-center text-slate-400">
@@ -415,7 +414,7 @@ function LatestUpdate({ overview, sections }: { overview: ProjectOverview; secti
       ) : (
         <Panel className="overflow-hidden">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-slate-100 bg-slate-50/60 px-6 py-4">
-            <div className="text-lg font-bold text-slate-800">{formatLongDate(u.updateDate)}</div>
+            <div className="text-lg font-bold text-slate-800">{formatDate(u.updateDate)}</div>
             <Stat label="Status">
               <ProjectStatusBadge status={u.projectStatus} />
             </Stat>
@@ -451,7 +450,7 @@ function LatestUpdate({ overview, sections }: { overview: ProjectOverview; secti
               {u.nextMilestone && (
                 <>
                   {u.nextMilestone}
-                  {u.nextMilestoneDate && <div className="text-xs text-slate-400">Target: {formatLongDate(u.nextMilestoneDate)}</div>}
+                  {u.nextMilestoneDate && <div className="text-xs text-slate-400">Target: {formatDate(u.nextMilestoneDate)}</div>}
                 </>
               )}
             </Field>
@@ -516,7 +515,7 @@ function UpdateHistory({ updates, sections }: { updates: ProjectUpdate[]; sectio
               </Tooltip>
               <div className="group min-w-0 flex-1 rounded-xl px-3 py-2 transition hover:bg-slate-50">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-bold text-slate-800">{formatLongDate(u.updateDate)}</span>
+                  <span className="text-sm font-bold text-slate-800">{formatDate(u.updateDate)}</span>
                   {i === 0 && <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">Latest</span>}
                   <ProjectStatusBadge status={u.projectStatus} />
                   <HealthIndicator health={u.healthStatus} />
@@ -528,7 +527,7 @@ function UpdateHistory({ updates, sections }: { updates: ProjectUpdate[]; sectio
                   <Tooltip title="Delete this update">
                     <IconButton
                       size="small"
-                      aria-label={`Delete update of ${formatLongDate(u.updateDate)}`}
+                      aria-label={`Delete update of ${formatDate(u.updateDate)}`}
                       onClick={() => deleteProjectUpdate(u.id)}
                       className="!ml-auto text-slate-300 opacity-60 transition group-hover:opacity-100 hover:!text-red-400"
                     >

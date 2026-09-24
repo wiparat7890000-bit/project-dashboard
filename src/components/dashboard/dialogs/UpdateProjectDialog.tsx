@@ -21,6 +21,7 @@ import {
 import { getProjectOverview, hasIssue, projectProgressColor, suggestProjectStatus, todayISO } from "@/lib/utils";
 import { useDashboard, type ProjectUpdateInput } from "../DashboardContext";
 import { ProgressBar } from "../ui/Primitives";
+import DateField from "../ui/DateField";
 import FormDialog, { FieldLabel } from "./FormDialog";
 
 interface Props {
@@ -103,15 +104,13 @@ export default function UpdateProjectDialog({ open, project, onClose }: Props) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <FieldLabel>Update Date *</FieldLabel>
-          <TextField
-            fullWidth
-            size="small"
-            type="date"
+          <DateField
+            label="Update date"
             value={form.updateDate}
-            onChange={(e) => set("updateDate", e.target.value)}
+            max={todayISO()}
+            onChange={(v) => set("updateDate", v)}
             error={!!errors.updateDate}
             helperText={errors.updateDate}
-            slotProps={{ htmlInput: { max: todayISO(), "aria-label": "Update date" } }}
           />
         </div>
         <div>
@@ -257,15 +256,13 @@ export default function UpdateProjectDialog({ open, project, onClose }: Props) {
         </div>
         <div>
           <FieldLabel>Next Milestone Date</FieldLabel>
-          <TextField
-            fullWidth
-            size="small"
-            type="date"
+          <DateField
+            label="Next milestone date"
             value={form.nextMilestoneDate}
-            onChange={(e) => set("nextMilestoneDate", e.target.value)}
+            min={form.updateDate || undefined}
+            onChange={(v) => set("nextMilestoneDate", v)}
             error={!!errors.nextMilestoneDate}
             helperText={errors.nextMilestoneDate}
-            slotProps={{ htmlInput: { min: form.updateDate || undefined, "aria-label": "Next milestone date" } }}
           />
         </div>
       </div>

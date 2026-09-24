@@ -17,7 +17,7 @@ const openSans = Open_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "ISD Project Status Dashboard",
+  title: "Project Dashboard | ISD",
   description: "Information System Division — project and task status dashboard",
 };
 

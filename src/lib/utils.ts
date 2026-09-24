@@ -15,7 +15,11 @@ import {
 const DAY_MS = 86_400_000;
 
 export const toISODate = (d: Date) => d.toISOString().split("T")[0];
-export const todayISO = () => toISODate(new Date());
+/** Today's date in the viewer's local time zone, as `YYYY-MM-DD`. */
+export const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
 
 export function uid(prefix: string) {
   return `${prefix}${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -81,23 +85,14 @@ export function donutColor(p: number) {
   return p >= 70 ? "#22c55e" : p >= 40 ? "#f59e0b" : "#0ea5e9";
 }
 
+/** Display format used across the app: `2026-09-24` → `24/09/2026`. */
 export function formatDate(d?: string) {
   if (!d) return "";
   const dt = new Date(d);
   if (Number.isNaN(dt.getTime())) return d;
   const dd = String(dt.getUTCDate()).padStart(2, "0");
   const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
-  return `${dd}-${mm}-${dt.getUTCFullYear()}`;
-}
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-/** `2026-09-24` → `24 Sep 2026`. */
-export function formatLongDate(d?: string) {
-  if (!d) return "";
-  const dt = new Date(d);
-  if (Number.isNaN(dt.getTime())) return d;
-  return `${String(dt.getUTCDate()).padStart(2, "0")} ${MONTHS[dt.getUTCMonth()]} ${dt.getUTCFullYear()}`;
+  return `${dd}/${mm}/${dt.getUTCFullYear()}`;
 }
 
 export function pct(count: number, total: number) {

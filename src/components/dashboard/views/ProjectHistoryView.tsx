@@ -9,7 +9,7 @@ import Tooltip from "@mui/material/Tooltip";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import SearchIcon from "@mui/icons-material/Search";
 import type { Project } from "@/lib/types";
-import { finishDate, formatDate, formatLongDate, getProjectOverview, type ProjectOverview } from "@/lib/utils";
+import { finishDate, formatDate, getProjectOverview, type ProjectOverview } from "@/lib/utils";
 import { useDashboard } from "../DashboardContext";
 import { ColorDot, ProjectStatusBadge } from "../ui/Badges";
 import { KpiCard, Panel, SectionHeading, type Kpi } from "../ui/Primitives";
@@ -257,7 +257,7 @@ function HistoryTableRow({ row, onOpen }: { row: HistoryRow; onOpen: () => void 
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <ProjectStatusBadge status={latest.projectStatus} />
-                <span className="whitespace-nowrap text-[11px] text-slate-400">{formatLongDate(latest.updateDate)}</span>
+                <span className="whitespace-nowrap text-[11px] text-slate-400">{formatDate(latest.updateDate)}</span>
               </div>
               {latest.achievement && <div className="mt-1 truncate text-xs text-slate-500">{latest.achievement}</div>}
             </div>
