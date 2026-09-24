@@ -103,8 +103,9 @@ function Section({ id, title, sections, action, summary, children }: SectionProp
 // ── Header ────────────────────────────────────────────────────────────────────
 
 function ProjectHeader({ project, overview }: { project: Project; overview: ProjectOverview }) {
-  const { openProjectDialog, openUpdateDialog } = useDashboard();
+  const { openProjectDialog, openUpdateDialog, isInHistory, setTab } = useDashboard();
   const { stats, status, health, isAuto, lastUpdated, latest } = overview;
+  const inHistory = isInHistory(project.id);
   const showDaysLeft = stats.daysLeft != null && status !== "Completed";
 
   const info: { label: string; value: React.ReactNode; hint: string }[] = [
@@ -143,7 +144,20 @@ function ProjectHeader({ project, overview }: { project: Project; overview: Proj
         style={{ background: `linear-gradient(135deg, #0f172a, ${project.color})` }}
       >
         <div className="min-w-0">
-          <div className="mb-1 text-xs font-semibold uppercase tracking-widest text-white/60">Project Dashboard</div>
+          <div className="mb-1 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-widest text-white/60">
+            Project Dashboard
+            {inHistory && (
+              <Tooltip title="All tasks are Done, so this project is listed in Project History. Reopen a task to make it active again.">
+                <button
+                  type="button"
+                  onClick={() => setTab("history")}
+                  className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] normal-case tracking-normal text-white hover:bg-white/25"
+                >
+                  📦 In Project History
+                </button>
+              </Tooltip>
+            )}
+          </div>
           <h2 className="text-xl font-bold leading-snug">{project.name}</h2>
           {project.description && <div className="mt-1 text-sm text-white/75">{project.description}</div>}
           {project.department && <div className="mt-2 text-xs text-white/60">🏢 {project.department}</div>}

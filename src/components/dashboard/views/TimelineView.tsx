@@ -12,13 +12,14 @@ const PAD_DAYS = 5;
 const phaseRank = (p: Phase | "") => (p ? PHASES.indexOf(p) : PHASES.length);
 
 export default function TimelineView() {
-  const { data, isAll, activeProject, activeProjectId, openTaskDialog } = useDashboard();
-  const tasks = isAll ? data.tasks : data.tasks.filter((t) => t.projectId === activeProjectId);
+  const { data, activeProjects, activeTasks, isAll, activeProject, activeProjectId, openTaskDialog } = useDashboard();
+  const tasks = isAll ? activeTasks : data.tasks.filter((t) => t.projectId === activeProjectId);
+  const scopeProjects = isAll ? activeProjects : activeProject ? [activeProject] : [];
   const title = isAll ? "All Projects Timeline" : `${activeProject?.name ?? ""} — Timeline`;
 
   const dates = [
     ...tasks.flatMap((t) => [t.startDate, t.endDate]),
-    ...data.projects.flatMap((p) => [p.startDate, p.endDate]),
+    ...scopeProjects.flatMap((p) => [p.startDate, p.endDate]),
   ]
     .filter(Boolean)
     .sort();

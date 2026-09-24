@@ -5,6 +5,7 @@ import Tooltip from "@mui/material/Tooltip";
 import AddIcon from "@mui/icons-material/Add";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import CloseIcon from "@mui/icons-material/Close";
+import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import { ALL_PROJECTS } from "@/lib/types";
 import { getProjectStats } from "@/lib/utils";
 import { useDashboard } from "./DashboardContext";
@@ -12,17 +13,19 @@ import ProjectHoverCard from "./ProjectHoverCard";
 import { ColorDot } from "./ui/Badges";
 
 export default function Sidebar() {
-  const { data, activeProjectId, selectProject, openProjectDialog, deleteProject } = useDashboard();
+  const { data, activeProjects, historyProjects, isInHistory, activeProjectId, tab, setTab, selectProject, openProjectDialog, deleteProject } =
+    useDashboard();
   const [deptFilter, setDeptFilter] = useState("");
 
   const usedDepts = useMemo(
-    () => [...new Set(data.projects.map((p) => p.department).filter(Boolean))].sort(),
-    [data.projects],
+    () => [...new Set(activeProjects.map((p) => p.department).filter(Boolean))].sort(),
+    [activeProjects],
   );
   // Drop a stale filter if its department no longer has projects.
   const filter = usedDepts.includes(deptFilter) ? deptFilter : "";
-  const visible = filter ? data.projects.filter((p) => p.department === filter) : data.projects;
+  const visible = filter ? activeProjects.filter((p) => p.department === filter) : activeProjects;
   const isAll = activeProjectId === ALL_PROJECTS;
+  const historyActive = tab === "history" || isInHistory(activeProjectId);
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col bg-slate-900 py-4 text-white shadow-xl md:flex">
@@ -31,7 +34,7 @@ export default function Sidebar() {
           type="button"
           onClick={() => selectProject(ALL_PROJECTS)}
           className={`mb-3 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
-            isAll ? "bg-sky-600 text-white" : "text-slate-300 hover:bg-slate-800"
+            isAll && tab !== "history" ? "bg-sky-600 text-white" : "text-slate-300 hover:bg-slate-800"
           }`}
         >
           <span>🌐</span>
@@ -58,7 +61,7 @@ export default function Sidebar() {
         <div className="max-h-[calc(100vh-280px)] space-y-1 overflow-y-auto">
           {!visible.length && (
             <div className="px-3 py-2 text-xs text-slate-500">
-              {filter ? "ไม่มีโปรเจกต์ใน Department นี้" : "No projects yet"}
+              {filter ? "ไม่มีโปรเจกต์ใน Department นี้" : historyProjects.length ? "All projects are finished" : "No projects yet"}
             </div>
           )}
           {visible.map((p) => {
@@ -90,7 +93,7 @@ export default function Sidebar() {
                   onClick={() => selectProject(p.id)}
                   onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && selectProject(p.id)}
                   className={`group flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition ${
-                    active ? "bg-slate-700 text-white" : "text-slate-300 hover:bg-slate-800"
+                    active && tab !== "history" ? "bg-slate-700 text-white" : "text-slate-300 hover:bg-slate-800"
                   }`}
                 >
                   <ColorDot color={p.color} />
@@ -133,6 +136,22 @@ export default function Sidebar() {
         >
           <AddIcon sx={{ fontSize: 14 }} /> Add Project
         </button>
+
+        <div className="mt-4 border-t border-slate-800 pt-4">
+          <Tooltip title="Projects whose tasks are all Done" placement="right">
+            <button
+              type="button"
+              onClick={() => setTab("history")}
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition ${
+                historyActive ? "bg-slate-700 text-white" : "text-slate-300 hover:bg-slate-800"
+              }`}
+            >
+              <Inventory2OutlinedIcon sx={{ fontSize: 18 }} />
+              <span className="flex-1">Project History</span>
+              <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-300">{historyProjects.length}</span>
+            </button>
+          </Tooltip>
+        </div>
       </div>
     </aside>
   );

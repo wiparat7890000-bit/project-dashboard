@@ -8,7 +8,7 @@ import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import { updateData, useDashboardData } from "@/lib/store";
 import { ALL_PROJECTS, type DashboardData, type ViewTab } from "@/lib/types";
-import { uid } from "@/lib/utils";
+import { splitProjects, uid } from "@/lib/utils";
 import { DashboardContext, type DashboardContextValue } from "./DashboardContext";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
@@ -17,6 +17,7 @@ import ProjectDialog from "./dialogs/ProjectDialog";
 import TaskDialog from "./dialogs/TaskDialog";
 import UpdateProjectDialog from "./dialogs/UpdateProjectDialog";
 import AllProjectsDashboard from "./views/AllProjectsDashboard";
+import ProjectHistoryView from "./views/ProjectHistoryView";
 import ProjectDashboard from "./views/ProjectDashboard";
 import TasksView from "./views/TasksView";
 import TimelineView from "./views/TimelineView";
@@ -56,12 +57,14 @@ function DashboardShell({ data }: { data: DashboardData }) {
   const activeProject = data.projects.find((p) => p.id === selectedId);
   const activeProjectId = activeProject ? selectedId : ALL_PROJECTS;
   const isAll = activeProjectId === ALL_PROJECTS;
+  const split = useMemo(() => splitProjects(data.projects, data.tasks), [data.projects, data.tasks]);
 
   const value = useMemo<DashboardContextValue>(() => {
     const open = (set: typeof setProjectDialog, id?: string) => set((d) => ({ open: true, id: id ?? null, key: d.key + 1 }));
 
     return {
       data,
+      ...split,
       activeProjectId,
       activeProject,
       isAll,
@@ -137,7 +140,7 @@ function DashboardShell({ data }: { data: DashboardData }) {
         if (resetSelection) setSelectedId(ALL_PROJECTS);
       },
     };
-  }, [data, activeProjectId, activeProject, isAll, tab, presentMode]);
+  }, [data, split, activeProjectId, activeProject, isAll, tab, presentMode]);
 
   return (
     <DashboardContext.Provider value={value}>
@@ -151,12 +154,24 @@ function DashboardShell({ data }: { data: DashboardData }) {
                 <Tab value="dashboard" label="📊 Dashboard" />
                 <Tab value="tasks" label="📋 Tasks" />
                 <Tab value="timeline" label="📅 Timeline" />
+                <Tab
+                  value="history"
+                  label={
+                    <span className="flex items-center gap-2">
+                      📦 Project History
+                      {split.historyProjects.length > 0 && (
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-500">{split.historyProjects.length}</span>
+                      )}
+                    </span>
+                  }
+                />
               </Tabs>
             </div>
             <div className="p-6">
               {tab === "dashboard" && (activeProject ? <ProjectDashboard project={activeProject} /> : <AllProjectsDashboard />)}
               {tab === "tasks" && <TasksView />}
               {tab === "timeline" && <TimelineView />}
+              {tab === "history" && <ProjectHistoryView />}
             </div>
           </main>
         </div>

@@ -87,7 +87,7 @@ export interface DashboardData {
 
 export const ALL_PROJECTS = "__all__";
 
-export type ViewTab = "dashboard" | "tasks" | "timeline";
+export type ViewTab = "dashboard" | "tasks" | "timeline" | "history";
 
 export interface ProjectStats {
   tasks: Task[];

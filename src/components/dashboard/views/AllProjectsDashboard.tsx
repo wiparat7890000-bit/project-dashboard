@@ -21,8 +21,7 @@ import TaskTable from "./TaskTable";
 const TABLE_LIMIT = 15;
 
 export default function AllProjectsDashboard() {
-  const { data, selectProject, openProjectDialog } = useDashboard();
-  const { projects, tasks } = data;
+  const { data, activeProjects: projects, activeTasks: tasks, historyProjects, selectProject, openProjectDialog, setTab } = useDashboard();
   const today = todayISO();
   const counts = countByStatus(tasks);
   const delayed = tasks.filter((t) => isDelayed(t, today)).length;
@@ -33,7 +32,7 @@ export default function AllProjectsDashboard() {
   });
 
   const kpis: Kpi[] = [
-    { label: "Total Projects", value: projects.length, icon: "🗂️", bg: "bg-indigo-50", border: "border-indigo-200" },
+    { label: "Active Projects", value: projects.length, icon: "🗂️", bg: "bg-indigo-50", border: "border-indigo-200" },
     { label: "Total Tasks", value: tasks.length, icon: "📋", bg: "bg-blue-50", border: "border-blue-200" },
     { label: "Completed", value: counts.Done, icon: "✅", bg: "bg-green-50", border: "border-green-200" },
     { label: "In Progress", value: counts["In Progress"], icon: "⚙️", bg: "bg-sky-50", border: "border-sky-200" },
@@ -44,7 +43,12 @@ export default function AllProjectsDashboard() {
     <div className="animate-slide-in">
       <div className="mb-5 flex items-center gap-3">
         <SectionHeading>All Projects Overview</SectionHeading>
-        <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">{projects.length} Projects</span>
+        <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">{projects.length} Active Projects</span>
+        {historyProjects.length > 0 && (
+          <button type="button" onClick={() => setTab("history")} className="ml-auto text-xs font-semibold text-slate-500 hover:text-sky-600">
+            📦 {historyProjects.length} finished in Project History →
+          </button>
+        )}
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">

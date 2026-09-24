@@ -9,6 +9,13 @@ export type ProjectUpdateInput = Omit<ProjectUpdate, "id" | "projectId" | "creat
 
 export interface DashboardContextValue {
   data: DashboardData;
+  /** Projects still in progress (shown in the sidebar and overview). */
+  activeProjects: Project[];
+  /** Projects whose tasks are all Done — listed in the Project History tab. */
+  historyProjects: Project[];
+  /** Tasks of active projects only. */
+  activeTasks: Task[];
+  isInHistory: (projectId: string) => boolean;
   activeProjectId: string;
   activeProject: Project | undefined;
   isAll: boolean;

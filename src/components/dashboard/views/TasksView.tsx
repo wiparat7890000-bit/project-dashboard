@@ -6,16 +6,17 @@ import { useDashboard } from "../DashboardContext";
 import TaskList, { NO_PHASE, TaskFilters, phasesOf, useTaskFilters } from "./TaskList";
 
 export default function TasksView() {
-  const { data, isAll, activeProject, activeProjectId, openTaskDialog } = useDashboard();
+  const { data, activeTasks, isAll, activeProject, activeProjectId, openTaskDialog } = useDashboard();
   const { filters, setFilters, apply } = useTaskFilters();
-  const scope = isAll ? data.tasks : data.tasks.filter((t) => t.projectId === activeProjectId);
+  // "All" covers active projects only; finished projects live in Project History.
+  const scope = isAll ? activeTasks : data.tasks.filter((t) => t.projectId === activeProjectId);
   const tasks = apply(scope);
   const phaseCounts = Object.fromEntries(phasesOf(scope).map((p) => [p, scope.filter((t) => (p === NO_PHASE ? !t.phase : t.phase === p)).length]));
 
   return (
     <div className="animate-slide-in">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-bold text-slate-800">{isAll ? "All Tasks" : `${activeProject?.name ?? ""} — Tasks`}</h2>
+        <h2 className="text-lg font-bold text-slate-800">{isAll ? "All Tasks (active projects)" : `${activeProject?.name ?? ""} — Tasks`}</h2>
         <div className="flex flex-wrap gap-2">
           <TaskFilters filters={filters} onChange={setFilters} phases={phasesOf(scope)} phaseCounts={phaseCounts} />
           {!isAll && (

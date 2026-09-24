@@ -185,3 +185,34 @@ export function getProjectOverview(project: Project, tasks: Task[], allUpdates: 
     lastUpdated: latest?.updateDate ?? "",
   };
 }
+
+// ── Project history (finished projects) ───────────────────────────────────────
+
+/**
+ * A project is finished when it has at least one Done task and every task is Done
+ * (Cancelled tasks don't block it). Derived from tasks, so reopening a task
+ * brings the project back to the active list.
+ */
+export function isProjectFinished(projectTasks: Task[]) {
+  return projectTasks.some((t) => t.status === "Done") && projectTasks.every((t) => t.status === "Done" || t.status === "Cancelled");
+}
+
+/** Latest end date among Done tasks — used as the project's finish date. */
+export function finishDate(projectTasks: Task[]) {
+  return projectTasks
+    .filter((t) => t.status === "Done" && t.endDate)
+    .map((t) => t.endDate)
+    .sort()
+    .at(-1) ?? "";
+}
+
+export function splitProjects(projects: Project[], tasks: Task[]) {
+  const finished = new Set(projects.filter((p) => isProjectFinished(tasks.filter((t) => t.projectId === p.id))).map((p) => p.id));
+  return {
+    activeProjects: projects.filter((p) => !finished.has(p.id)),
+    historyProjects: projects.filter((p) => finished.has(p.id)),
+    /** Tasks that belong to active (not finished) projects. */
+    activeTasks: tasks.filter((t) => !finished.has(t.projectId)),
+    isInHistory: (id: string) => finished.has(id),
+  };
+}
