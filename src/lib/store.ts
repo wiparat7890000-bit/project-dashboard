@@ -2,6 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 import { DEPT_LIST_DEFAULT, DEV_LIST_DEFAULT, STORAGE_KEYS } from "./constants";
+import { DEFAULT_PHASES } from "./types";
+import { mergePhases } from "./utils";
 import { createSampleData } from "./sampleData";
 import { normalizeProject, normalizeTask, normalizeUpdate } from "./importExport";
 import type { DashboardData } from "./types";
@@ -33,14 +35,17 @@ function load(): DashboardData {
   const storedUpdates = readJSON<unknown[]>(STORAGE_KEYS.updates);
   const devList = nonEmptyStringArray(readJSON(STORAGE_KEYS.devList)) ?? [...DEV_LIST_DEFAULT];
   const deptList = nonEmptyStringArray(readJSON(STORAGE_KEYS.deptList)) ?? [...DEPT_LIST_DEFAULT];
+  const storedPhases = readJSON<unknown>(STORAGE_KEYS.phaseList);
+  // An empty saved list is valid (the user removed every phase); only a missing list gets the defaults.
+  const phaseList = Array.isArray(storedPhases) ? storedPhases.map(String) : [...DEFAULT_PHASES];
 
   if (Array.isArray(storedProjects) && storedProjects.length) {
     const projects = storedProjects.map((p, i) => normalizeProject(p, i));
-    const tasks = Array.isArray(storedTasks) ? storedTasks.map(normalizeTask) : [];
+    const tasks = Array.isArray(storedTasks) ? storedTasks.map((t) => normalizeTask(t, phaseList)) : [];
     const updates = Array.isArray(storedUpdates) ? storedUpdates.map(normalizeUpdate) : [];
-    return { projects, tasks, updates, devList, deptList };
+    return { projects, tasks, updates, devList, deptList, phaseList: mergePhases(phaseList, tasks) };
   }
-  const data = { ...createSampleData(), devList, deptList };
+  const data = { ...createSampleData(), devList, deptList, phaseList };
   persist(data);
   return data;
 }
@@ -52,6 +57,7 @@ function persist(data: DashboardData) {
     localStorage.setItem(STORAGE_KEYS.updates, JSON.stringify(data.updates));
     localStorage.setItem(STORAGE_KEYS.devList, JSON.stringify(data.devList));
     localStorage.setItem(STORAGE_KEYS.deptList, JSON.stringify(data.deptList));
+    localStorage.setItem(STORAGE_KEYS.phaseList, JSON.stringify(data.phaseList));
   } catch {
     // storage full or unavailable — keep working in memory
   }

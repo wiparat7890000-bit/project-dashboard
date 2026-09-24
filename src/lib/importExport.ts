@@ -1,7 +1,6 @@
 import {
   HEALTH_STATUSES,
   ISSUE_STATUSES,
-  PHASES,
   PRIORITIES,
   PROJECT_STATUSES,
   type DashboardData,
@@ -12,7 +11,7 @@ import {
   type Status,
   type Task,
 } from "./types";
-import { colorFor, downloadFile, todayISO, toISODate, uid } from "./utils";
+import { colorFor, downloadFile, mergePhases, todayISO, toISODate, uid } from "./utils";
 
 type Row = Record<string, string>;
 
@@ -43,10 +42,12 @@ export function normPriority(s: unknown): Priority {
   return PRIORITIES.find((p) => squash(p) === key) ?? "Medium";
 }
 
-export function normPhase(s: unknown): Phase | "" {
-  const key = squash(str(s));
+/** Match a phase name to the list (ignoring case/spaces/punctuation); unknown names are kept as typed. */
+export function normPhase(s: unknown, phaseList: string[] = []): Phase {
+  const raw = str(s).trim();
+  const key = squash(raw);
   if (!key) return "";
-  return PHASES.find((p) => squash(p) === key) ?? "";
+  return phaseList.find((p) => squash(p) === key) ?? raw;
 }
 
 /** Normalize any common date format → `YYYY-MM-DD` ("" if unparseable). */
@@ -113,7 +114,7 @@ export function normalizeProject(input: unknown, index: number): Project {
   };
 }
 
-export function normalizeTask(input: unknown): Task {
+export function normalizeTask(input: unknown, phaseList: string[] = []): Task {
   const t = (input ?? {}) as Record<string, unknown>;
   const status = normStatus(t.status);
   return {
@@ -122,7 +123,7 @@ export function normalizeTask(input: unknown): Task {
     name: str(t.name) || "Untitled Task",
     owner: str(t.owner ?? t.assignee),
     dev: parseDevList(t.dev),
-    phase: normPhase(t.phase),
+    phase: normPhase(t.phase, phaseList),
     startDate: normDate(t.startDate),
     endDate: normDate(t.endDate),
     status,
@@ -208,7 +209,20 @@ export interface ImportResult {
   addedTasks: number;
 }
 
+/** Keep phases used by imported tasks in the phase list. */
+function withPhases(result: ImportResult): ImportResult {
+  return { ...result, data: { ...result.data, phaseList: mergePhases(result.data.phaseList, result.data.tasks) } };
+}
+
 export function importJson(raw: string, merge: boolean, current: DashboardData): ImportResult {
+  return withPhases(importJsonData(raw, merge, current));
+}
+
+export function importCsv(raw: string, type: CsvType, merge: boolean, current: DashboardData): ImportResult {
+  return withPhases(importCsvData(raw, type, merge, current));
+}
+
+function importJsonData(raw: string, merge: boolean, current: DashboardData): ImportResult {
   const text = cleanText(raw).trim();
   if (!text) throw new Error("กรุณาวาง JSON หรืออัปโหลดไฟล์ก่อน");
 
@@ -237,7 +251,7 @@ export function importJson(raw: string, merge: boolean, current: DashboardData):
     return { ...project, id: nid };
   });
   const newTasks = inT.map((t) => {
-    const task = normalizeTask(t);
+    const task = normalizeTask(t, current.phaseList);
     return { ...task, id: uid("t"), projectId: idMap[task.projectId] ?? task.projectId };
   });
   const newUpdates = inU.map((u) => {
@@ -261,7 +275,7 @@ export function importJson(raw: string, merge: boolean, current: DashboardData):
 
 export type CsvType = "tasks" | "projects";
 
-export function importCsv(raw: string, type: CsvType, merge: boolean, current: DashboardData): ImportResult {
+function importCsvData(raw: string, type: CsvType, merge: boolean, current: DashboardData): ImportResult {
   if (!cleanText(raw).trim()) throw new Error("กรุณาวาง CSV หรืออัปโหลดไฟล์ก่อน");
   const rows = parseCSV(raw);
 
@@ -308,7 +322,7 @@ export function importCsv(raw: string, type: CsvType, merge: boolean, current: D
       name: r.name || r.taskname || r.task || "Untitled Task",
       owner: r.owner || r.assignee || "",
       dev: parseDevList(r.dev || r.developer || r.developers),
-      phase: normPhase(r.phase || r.phasename),
+      phase: normPhase(r.phase || r.phasename, current.phaseList),
       startDate: normDate(r.startdate || r.start),
       endDate: normDate(r.enddate || r.end || r.duedate || r.due),
       status,

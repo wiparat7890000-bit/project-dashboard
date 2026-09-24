@@ -4,7 +4,8 @@ export type Status = (typeof STATUSES)[number];
 export const PRIORITIES = ["High", "Medium", "Low"] as const;
 export type Priority = (typeof PRIORITIES)[number];
 
-export const PHASES = [
+/** Phases offered on a fresh install; users can add, remove and reorder them. */
+export const DEFAULT_PHASES = [
   "Master & Config",
   "Functional Requirement",
   "Design Screen",
@@ -16,7 +17,8 @@ export const PHASES = [
   "Golive",
   "Support",
 ] as const;
-export type Phase = (typeof PHASES)[number];
+/** A phase name from the user-managed phase list ("" = no phase). */
+export type Phase = string;
 
 export const PROJECT_STATUSES = ["Not Started", "In Progress", "At Risk", "Delayed", "Completed", "On Hold"] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
@@ -46,7 +48,7 @@ export interface Task {
   name: string;
   owner: string;
   dev: string[];
-  phase: Phase | "";
+  phase: Phase;
   startDate: string;
   endDate: string;
   status: Status;
@@ -83,6 +85,8 @@ export interface DashboardData {
   updates: ProjectUpdate[];
   devList: string[];
   deptList: string[];
+  /** Ordered phase list; order drives grouping and sorting. */
+  phaseList: string[];
 }
 
 export const ALL_PROJECTS = "__all__";

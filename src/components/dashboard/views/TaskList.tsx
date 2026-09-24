@@ -6,8 +6,8 @@ import MenuItem from "@mui/material/MenuItem";
 import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
-import { PHASES, PRIORITIES, STATUSES, type Phase, type Priority, type Project, type Status, type Task } from "@/lib/types";
-import { avgProgress, daysDelayed, formatDate, groupByPhase, taskProgressColor, todayISO } from "@/lib/utils";
+import { PRIORITIES, STATUSES, type Phase, type Priority, type Project, type Status, type Task } from "@/lib/types";
+import { avgProgress, daysDelayed, formatDate, groupByPhase, orderPhases, taskProgressColor, todayISO } from "@/lib/utils";
 import { useDashboard } from "../DashboardContext";
 import { DelayedBadge, DevTags, PhaseBadge, PriorityBadge, StatusBadge } from "../ui/Badges";
 import { Panel, ProgressBar } from "../ui/Primitives";
@@ -37,11 +37,13 @@ export function useTaskFilters() {
   return { filters, setFilters, apply, active, reset: () => setFilters(EMPTY_FILTERS) };
 }
 
-/** Phases used by `tasks`, in phase order (tasks without a phase last). */
-export function phasesOf(tasks: Task[]): PhaseFilter[] {
-  const used = new Set(tasks.map((t) => t.phase));
-  const phases: PhaseFilter[] = PHASES.filter((p) => used.has(p));
-  if (used.has("")) phases.push(NO_PHASE);
+/** Phases used by `tasks`, in phase-list order (tasks without a phase last). */
+export function phasesOf(tasks: Task[], phaseList: string[]): PhaseFilter[] {
+  const phases: PhaseFilter[] = orderPhases(
+    tasks.map((t) => t.phase),
+    phaseList,
+  );
+  if (tasks.some((t) => !t.phase)) phases.push(NO_PHASE);
   return phases;
 }
 
@@ -234,7 +236,7 @@ export default function TaskList({ tasks, showProject = false, grouped = false, 
 
   return (
     <div className="space-y-5">
-      {groupByPhase(tasks).map(([phase, phaseTasks]) => {
+      {groupByPhase(tasks, data.phaseList).map(([phase, phaseTasks]) => {
         const avg = avgProgress(phaseTasks);
         return (
           <section key={phase || "none"}>

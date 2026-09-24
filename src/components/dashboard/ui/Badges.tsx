@@ -1,4 +1,4 @@
-import { HEALTH_STYLE, NEUTRAL_TAG, PHASE_STYLE, PRIORITY_STYLE, PROJECT_STATUS_STYLE, STATUS_STYLE, type TagStyle } from "@/lib/constants";
+import { HEALTH_STYLE, NEUTRAL_TAG, PRIORITY_STYLE, PROJECT_STATUS_STYLE, STATUS_STYLE, phaseStyle, type TagStyle } from "@/lib/constants";
 import type { HealthStatus, Phase, Priority, ProjectStatus, Status } from "@/lib/types";
 
 function Tag({ tag, children, className = "" }: { tag: TagStyle; children: React.ReactNode; className?: string }) {
@@ -21,8 +21,8 @@ export function PriorityBadge({ priority }: { priority: Priority }) {
   return <Tag tag={PRIORITY_STYLE[priority]}>{priority}</Tag>;
 }
 
-export function PhaseBadge({ phase, size = "md" }: { phase: Phase | ""; size?: "sm" | "md" }) {
-  const tag = phase ? PHASE_STYLE[phase] : { ...NEUTRAL_TAG, color: "#94a3b8" };
+export function PhaseBadge({ phase, size = "md" }: { phase: Phase; size?: "sm" | "md" }) {
+  const tag = phase ? phaseStyle(phase) : { ...NEUTRAL_TAG, color: "#94a3b8" };
   return (
     <Tag tag={tag} className={size === "sm" ? "!px-1.5 !py-px !text-[9px] font-bold" : "!text-[10px]"}>
       {phase || "—"}

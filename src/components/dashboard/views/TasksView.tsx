@@ -11,14 +11,14 @@ export default function TasksView() {
   // "All" covers active projects only; finished projects live in Project History.
   const scope = isAll ? activeTasks : data.tasks.filter((t) => t.projectId === activeProjectId);
   const tasks = apply(scope);
-  const phaseCounts = Object.fromEntries(phasesOf(scope).map((p) => [p, scope.filter((t) => (p === NO_PHASE ? !t.phase : t.phase === p)).length]));
+  const phaseCounts = Object.fromEntries(phasesOf(scope, data.phaseList).map((p) => [p, scope.filter((t) => (p === NO_PHASE ? !t.phase : t.phase === p)).length]));
 
   return (
     <div className="animate-slide-in">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-bold text-slate-800">{isAll ? "All Tasks (active projects)" : `${activeProject?.name ?? ""} — Tasks`}</h2>
         <div className="flex flex-wrap gap-2">
-          <TaskFilters filters={filters} onChange={setFilters} phases={phasesOf(scope)} phaseCounts={phaseCounts} />
+          <TaskFilters filters={filters} onChange={setFilters} phases={phasesOf(scope, data.phaseList)} phaseCounts={phaseCounts} />
           {!isAll && (
             <Button variant="contained" startIcon={<AddIcon />} onClick={() => openTaskDialog()}>
               Add Task

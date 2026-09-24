@@ -135,6 +135,20 @@ function DashboardShell({ data }: { data: DashboardData }) {
         updateData((d) => ({ ...d, updates: d.updates.map((u) => (u.id === updateId ? { ...u, issueStatus } : u)) })),
       setDevList: (devList) => updateData((d) => ({ ...d, devList })),
       setDeptList: (deptList) => updateData((d) => ({ ...d, deptList })),
+      setPhaseList: (phaseList) => updateData((d) => ({ ...d, phaseList })),
+      deletePhase: (phase) => {
+        const used = data.tasks.filter((t) => t.phase === phase).length;
+        const message = used
+          ? `ลบ Phase "${phase}"?\n\nมี ${used} task ที่ใช้ Phase นี้ — task เหล่านั้นจะถูกย้ายไปเป็น "No phase"`
+          : `ลบ Phase "${phase}" ออกจากรายการ?`;
+        if (!confirm(message)) return false;
+        updateData((d) => ({
+          ...d,
+          phaseList: d.phaseList.filter((p) => p !== phase),
+          tasks: d.tasks.map((t) => (t.phase === phase ? { ...t, phase: "" } : t)),
+        }));
+        return true;
+      },
       replaceData: (next, resetSelection) => {
         updateData(() => next);
         if (resetSelection) setSelectedId(ALL_PROJECTS);

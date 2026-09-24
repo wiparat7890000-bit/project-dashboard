@@ -40,7 +40,8 @@ export interface TagStyle {
   color: string;
 }
 
-export const PHASE_STYLE: Record<Phase, TagStyle> = {
+/** Colors for the default phases; other phases get one from PHASE_PALETTE. */
+export const PHASE_STYLE: Record<string, TagStyle> = {
   "Master & Config": { bg: "#ede9fe", color: "#6d28d9" },
   "Functional Requirement": { bg: "#dbeafe", color: "#1d4ed8" },
   "Design Screen": { bg: "#fce7f3", color: "#be185d" },
@@ -54,6 +55,27 @@ export const PHASE_STYLE: Record<Phase, TagStyle> = {
 };
 
 export const NEUTRAL_TAG: TagStyle = { bg: "#f1f5f9", color: "#64748b" };
+
+const PHASE_PALETTE: TagStyle[] = [
+  { bg: "#e0e7ff", color: "#4338ca" },
+  { bg: "#ccfbf1", color: "#0f766e" },
+  { bg: "#ffedd5", color: "#c2410c" },
+  { bg: "#fae8ff", color: "#a21caf" },
+  { bg: "#ecfccb", color: "#4d7c0f" },
+  { bg: "#cffafe", color: "#0e7490" },
+  { bg: "#ffe4e6", color: "#be123c" },
+  { bg: "#fef9c3", color: "#a16207" },
+];
+
+/** Tag colors for a phase; custom phases get a stable color derived from their name. */
+export function phaseStyle(phase: Phase): TagStyle {
+  if (!phase) return NEUTRAL_TAG;
+  const known = PHASE_STYLE[phase];
+  if (known) return known;
+  let h = 0;
+  for (const ch of phase) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return PHASE_PALETTE[h % PHASE_PALETTE.length];
+}
 
 export interface StatusStyle extends TagStyle {
   icon: string;
@@ -106,4 +128,5 @@ export const STORAGE_KEYS = {
   updates: "isd_project_updates",
   devList: "isd_dev_list",
   deptList: "isd_dept_list",
+  phaseList: "isd_phase_list",
 } as const;

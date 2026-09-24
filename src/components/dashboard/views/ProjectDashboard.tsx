@@ -9,7 +9,7 @@ import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import { NEUTRAL_TAG, PHASE_STYLE, PROJECT_STATUS_STYLE, STATUS_STYLE } from "@/lib/constants";
+import { PROJECT_STATUS_STYLE, STATUS_STYLE, phaseStyle } from "@/lib/constants";
 import { STATUSES, type Project, type ProjectUpdate } from "@/lib/types";
 import {
   avgProgress,
@@ -251,8 +251,9 @@ function KpiSummary({ overview }: { overview: ProjectOverview }) {
 // ── Project progress by workstream ───────────────────────────────────────────
 
 function ProjectProgress({ overview }: { overview: ProjectOverview }) {
+  const { data } = useDashboard();
   const { stats } = overview;
-  const groups = groupByPhase(stats.tasks);
+  const groups = groupByPhase(stats.tasks, data.phaseList);
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -266,7 +267,7 @@ function ProjectProgress({ overview }: { overview: ProjectOverview }) {
           {groups.map(([phase, tasks]) => {
             const avg = avgProgress(tasks);
             const done = tasks.filter((t) => t.progress >= 100).length;
-            const color = (phase ? PHASE_STYLE[phase] : NEUTRAL_TAG).color;
+            const color = phaseStyle(phase).color;
             const name = phase || "No phase";
             return (
               <Tooltip key={phase || "none"} title={`${name}: ${done} of ${tasks.length} task${tasks.length === 1 ? "" : "s"} done · average ${avg}%`} placement="top">
@@ -314,11 +315,11 @@ function ProjectProgress({ overview }: { overview: ProjectOverview }) {
 // ── Tasks ─────────────────────────────────────────────────────────────────────
 
 function TaskSection({ overview, sections }: { overview: ProjectOverview; sections: Sections }) {
-  const { openTaskDialog } = useDashboard();
+  const { data, openTaskDialog } = useDashboard();
   const { filters, setFilters, apply, active, reset } = useTaskFilters();
   const all = overview.stats.tasks;
   const tasks = apply(all);
-  const phases = phasesOf(all);
+  const phases = phasesOf(all, data.phaseList);
   const phaseCounts = Object.fromEntries(phases.map((p) => [p, all.filter((t) => (p === NO_PHASE ? !t.phase : t.phase === p)).length]));
 
   return (

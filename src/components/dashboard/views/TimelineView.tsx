@@ -1,15 +1,14 @@
 "use client";
 
 import { STATUS_STYLE } from "@/lib/constants";
-import { PHASES, STATUSES, type Phase } from "@/lib/types";
-import { firstName, formatDate, isDelayed, todayISO } from "@/lib/utils";
+import { STATUSES } from "@/lib/types";
+import { firstName, formatDate, isDelayed, phaseRank, todayISO } from "@/lib/utils";
 import { useDashboard } from "../DashboardContext";
 import { PhaseBadge } from "../ui/Badges";
 import { Panel } from "../ui/Primitives";
 
 const DAY_MS = 86_400_000;
 const PAD_DAYS = 5;
-const phaseRank = (p: Phase | "") => (p ? PHASES.indexOf(p) : PHASES.length);
 
 export default function TimelineView() {
   const { data, activeProjects, activeTasks, isAll, activeProject, activeProjectId, openTaskDialog } = useDashboard();
@@ -48,7 +47,7 @@ export default function TimelineView() {
   const today = todayISO();
   const todayPos = pos(new Date());
   const sorted = [...tasks].sort(
-    (a, b) => phaseRank(a.phase) - phaseRank(b.phase) || a.startDate.localeCompare(b.startDate),
+    (a, b) => phaseRank(a.phase, data.phaseList) - phaseRank(b.phase, data.phaseList) || a.startDate.localeCompare(b.startDate),
   );
 
   return (

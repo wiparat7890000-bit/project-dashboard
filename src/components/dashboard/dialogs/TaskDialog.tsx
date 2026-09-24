@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import Alert from "@mui/material/Alert";
+import Collapse from "@mui/material/Collapse";
 import MenuItem from "@mui/material/MenuItem";
 import Slider from "@mui/material/Slider";
 import TextField from "@mui/material/TextField";
-import { PRIORITY_STYLE, STATUS_EMOJI } from "@/lib/constants";
-import { PHASES, PRIORITIES, STATUSES, type Phase, type Priority, type Status } from "@/lib/types";
+import { PRIORITY_STYLE, STATUS_EMOJI, phaseStyle } from "@/lib/constants";
+import { PRIORITIES, STATUSES, type Priority, type Status } from "@/lib/types";
 import { useDashboard, type TaskInput } from "../DashboardContext";
 import DevSelect from "./DevSelect";
 import DateField from "../ui/DateField";
-import FormDialog, { FieldLabel } from "./FormDialog";
+import FormDialog, { FieldLabel, LinkAction } from "./FormDialog";
+import PhaseManager from "./PhaseManager";
 
 interface Props {
   open: boolean;
@@ -35,6 +37,9 @@ export default function TaskDialog({ open, taskId, onClose }: Props) {
     notes: existing?.notes ?? "",
   }));
   const [error, setError] = useState("");
+  const [showPhaseManager, setShowPhaseManager] = useState(false);
+  // Keep a phase that is on the task but no longer in the list selectable.
+  const phaseOptions = form.phase && !data.phaseList.includes(form.phase) ? [...data.phaseList, form.phase] : data.phaseList;
 
   const set = <K extends keyof TaskInput>(key: K, value: TaskInput[K]) => setForm((f) => ({ ...f, [key]: value }));
 
@@ -59,11 +64,19 @@ export default function TaskDialog({ open, taskId, onClose }: Props) {
     <FormDialog open={open} title={existing ? "Edit Task" : "New Task"} onClose={onClose} onSubmit={handleSave} submitLabel="Save Task">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
-          <FieldLabel>Phase</FieldLabel>
-          <TextField select fullWidth size="small" value={form.phase} onChange={(e) => set("phase", e.target.value as Phase | "")} slotProps={{ select: { displayEmpty: true } }}>
+          <FieldLabel action={<LinkAction onClick={() => setShowPhaseManager((v) => !v)}>⚙ จัดการ Phase</LinkAction>}>Phase</FieldLabel>
+          <TextField
+            select
+            fullWidth
+            size="small"
+            value={form.phase}
+            onChange={(e) => set("phase", e.target.value)}
+            slotProps={{ select: { displayEmpty: true }, htmlInput: { "aria-label": "Phase" } }}
+          >
             <MenuItem value="">— Phase —</MenuItem>
-            {PHASES.map((p) => (
+            {phaseOptions.map((p) => (
               <MenuItem key={p} value={p}>
+                <span className="mr-2 inline-block h-2 w-2 rounded-full" style={{ background: phaseStyle(p).color }} />
                 {p}
               </MenuItem>
             ))}
@@ -74,6 +87,9 @@ export default function TaskDialog({ open, taskId, onClose }: Props) {
           <TextField fullWidth size="small" autoFocus placeholder="Task description..." value={form.name} onChange={(e) => set("name", e.target.value)} />
         </div>
       </div>
+      <Collapse in={showPhaseManager} unmountOnExit>
+        <PhaseManager onAdded={(p) => set("phase", p)} onDeleted={(p) => form.phase === p && set("phase", "")} />
+      </Collapse>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>

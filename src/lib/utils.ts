@@ -1,6 +1,5 @@
 import { COLORS, NO_ISSUE_TEXT } from "./constants";
 import {
-  PHASES,
   STATUSES,
   type HealthStatus,
   type Phase,
@@ -114,12 +113,38 @@ export function downloadFile(name: string, content: string, type: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** Group tasks by phase, in PHASES order, with tasks that have no phase last. */
-export function groupByPhase(tasks: Task[]): [Phase | "", Task[]][] {
-  const groups = new Map<Phase | "", Task[]>();
+/**
+ * Phases in display order: the phase list first, then any phase a task uses that
+ * isn't in the list (alphabetically). Never includes "".
+ */
+export function orderPhases(used: Iterable<Phase>, phaseList: string[]): Phase[] {
+  const set = new Set([...used].filter(Boolean));
+  const extra = [...set].filter((p) => !phaseList.includes(p)).sort((a, b) => a.localeCompare(b));
+  return [...phaseList.filter((p) => set.has(p)), ...extra];
+}
+
+/** Rank of a phase for sorting (list order; unknown phases after; no phase last). */
+export function phaseRank(phase: Phase, phaseList: string[]) {
+  if (!phase) return Number.MAX_SAFE_INTEGER;
+  const i = phaseList.indexOf(phase);
+  return i === -1 ? phaseList.length : i;
+}
+
+/** Group tasks by phase in phase-list order, with tasks that have no phase last. */
+export function groupByPhase(tasks: Task[], phaseList: string[]): [Phase, Task[]][] {
+  const groups = new Map<Phase, Task[]>();
   for (const t of tasks) groups.set(t.phase, [...(groups.get(t.phase) ?? []), t]);
-  const order: (Phase | "")[] = [...PHASES, ""];
-  return order.filter((p) => groups.has(p)).map((p) => [p, groups.get(p)!]);
+  const order = [...orderPhases(groups.keys(), phaseList), ...(groups.has("") ? [""] : [])];
+  return order.map((p) => [p, groups.get(p)!]);
+}
+
+/** Append phases used by tasks that are missing from the list (keeps list order). */
+export function mergePhases(phaseList: string[], tasks: Task[]) {
+  const missing = orderPhases(
+    tasks.map((t) => t.phase),
+    phaseList,
+  ).filter((p) => !phaseList.includes(p));
+  return missing.length ? [...phaseList, ...missing] : phaseList;
 }
 
 // ── Project status & updates ──────────────────────────────────────────────────

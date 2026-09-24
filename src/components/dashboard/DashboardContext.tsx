@@ -41,6 +41,9 @@ export interface DashboardContextValue {
   setIssueStatus: (updateId: string, status: IssueStatus) => void;
   setDevList: (list: string[]) => void;
   setDeptList: (list: string[]) => void;
+  setPhaseList: (list: string[]) => void;
+  /** Remove a phase from the list and clear it from tasks (asks for confirmation). Returns whether it was deleted. */
+  deletePhase: (phase: string) => boolean;
   replaceData: (data: DashboardData, resetSelection: boolean) => void;
 }
 
