@@ -1,5 +1,5 @@
 import { COLORS } from "./constants";
-import { STATUSES, type Project, type ProjectStats, type Status, type Task } from "./types";
+import { PHASES, STATUSES, type Phase, type Project, type ProjectStats, type Status, type Task } from "./types";
 
 const DAY_MS = 86_400_000;
 
@@ -92,4 +92,12 @@ export function downloadFile(name: string, content: string, type: string) {
   a.download = name;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** Group tasks by phase, in PHASES order, with tasks that have no phase last. */
+export function groupByPhase(tasks: Task[]): [Phase | "", Task[]][] {
+  const groups = new Map<Phase | "", Task[]>();
+  for (const t of tasks) groups.set(t.phase, [...(groups.get(t.phase) ?? []), t]);
+  const order: (Phase | "")[] = [...PHASES, ""];
+  return order.filter((p) => groups.has(p)).map((p) => [p, groups.get(p)!]);
 }

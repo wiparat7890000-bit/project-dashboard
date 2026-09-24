@@ -4,12 +4,12 @@ import { useState } from "react";
 import Collapse from "@mui/material/Collapse";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { PRIORITY_STYLE, STATUS_STYLE } from "@/lib/constants";
-import { PHASES, PRIORITIES, STATUSES, type Phase, type Project, type Task } from "@/lib/types";
-import { avgProgress, countByStatus, donutColor, formatDate, getProjectStats, pct, taskProgressColor } from "@/lib/utils";
+import { PRIORITIES, STATUSES, type Project, type Task } from "@/lib/types";
+import { avgProgress, countByStatus, donutColor, formatDate, getProjectStats, groupByPhase, pct, taskProgressColor } from "@/lib/utils";
 import { useDashboard } from "../DashboardContext";
 import { PhaseBadge } from "../ui/Badges";
 import { Donut, KpiCard, Panel, ProgressBar, type Kpi } from "../ui/Primitives";
-import TaskTable from "./TaskTable";
+import PhaseTaskCards from "./PhaseTaskCards";
 
 type SectionId = "phase" | "tasks";
 
@@ -149,9 +149,9 @@ export default function ProjectDashboard({ project }: { project: Project }) {
           }
         />
         <Collapse in={isOpen("tasks")}>
-          <TaskTable
+          <PhaseTaskCards
             tasks={activeTasks}
-            onRowClick={(t) => openTaskDialog(t.id)}
+            onCardClick={(t) => openTaskDialog(t.id)}
             empty={
               s.tasks.length ? (
                 "🎉 ทุก task เสร็จสิ้นหรือยกเลิกแล้ว"
@@ -214,9 +214,7 @@ function CollapsibleHeader({
 }
 
 function PhaseSummary({ tasks }: { tasks: Task[] }) {
-  const groups = new Map<Phase | "", Task[]>();
-  for (const t of tasks) groups.set(t.phase, [...(groups.get(t.phase) ?? []), t]);
-  const ordered: (Phase | "")[] = [...PHASES.filter((p) => groups.has(p)), ...(groups.has("") ? [""] : [])] as (Phase | "")[];
+  const groups = groupByPhase(tasks);
 
   const th = "px-4 py-3 text-center";
   return (
@@ -235,15 +233,14 @@ function PhaseSummary({ tasks }: { tasks: Task[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-50">
-          {!ordered.length && (
+          {!groups.length && (
             <tr>
               <td colSpan={8} className="py-8 text-center text-sm text-slate-400">
                 ยังไม่มี task
               </td>
             </tr>
           )}
-          {ordered.map((ph) => {
-            const pt = groups.get(ph)!;
+          {groups.map(([ph, pt]) => {
             const counts = countByStatus(pt);
             const avg = avgProgress(pt);
             return (
