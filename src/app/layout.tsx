@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Open_Sans, Quicksand } from "next/font/google";
 import Providers from "@/components/Providers";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+// Stack: Quicksand → SF Thonburi (Thai, Apple) → Open Sans → Helvetica Neue → Arial.
+// Quicksand/Open Sans have no Thai glyphs, so Thai text falls through to SF Thonburi or the system font.
+const quicksand = Quicksand({
+  variable: "--font-quicksand",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const openSans = Open_Sans({
+  variable: "--font-open-sans",
   subsets: ["latin"],
 });
 
@@ -15,7 +23,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="th" className={`${inter.variable} h-full antialiased`}>
+    <html lang="th" className={`${quicksand.variable} ${openSans.variable} h-full antialiased`}>
       <body className="min-h-full">
         <Providers>{children}</Providers>
       </body>

@@ -1,3 +1,5 @@
+import Tooltip from "@mui/material/Tooltip";
+
 export function Panel({ className = "", children, ...rest }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div className={`rounded-2xl border border-slate-100 bg-white/95 shadow ${className}`} {...rest}>
@@ -97,11 +99,13 @@ export interface Kpi {
   border: string;
   /** Extra content under the value, e.g. a progress bar. */
   footer?: React.ReactNode;
+  /** Tooltip explaining how the value is calculated. */
+  hint?: string;
 }
 
 export function KpiCard({ kpi, compact = false }: { kpi: Kpi; compact?: boolean }) {
-  return (
-    <Panel className={`flex items-center ${compact ? "gap-3 p-4" : "gap-4 p-5"} ${kpi.border}`}>
+  const card = (
+    <Panel className={`flex items-center transition hover:-translate-y-0.5 hover:shadow-md ${compact ? "gap-3 p-4" : "gap-4 p-5"} ${kpi.border}`}>
       <div className={`${kpi.bg} flex ${compact ? "h-11 w-11" : "h-12 w-12"} shrink-0 items-center justify-center rounded-xl text-xl`}>
         {kpi.icon}
       </div>
@@ -112,6 +116,7 @@ export function KpiCard({ kpi, compact = false }: { kpi: Kpi; compact?: boolean 
       </div>
     </Panel>
   );
+  return kpi.hint ? <Tooltip title={kpi.hint}>{card}</Tooltip> : card;
 }
 
 export function SectionHeading({ children, accent = "bg-sky-500", as: Tag = "h2" }: { children: React.ReactNode; accent?: string; as?: "h2" | "h3" }) {

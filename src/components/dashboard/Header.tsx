@@ -1,6 +1,7 @@
 "use client";
 
 import Button from "@mui/material/Button";
+import Tooltip from "@mui/material/Tooltip";
 import AddIcon from "@mui/icons-material/Add";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 import SlideshowOutlinedIcon from "@mui/icons-material/SlideshowOutlined";
@@ -25,20 +26,26 @@ export default function Header() {
         <h1 className="text-lg font-bold leading-tight">Project Status Dashboard</h1>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => openProjectDialog()}>
-          New Project
-        </Button>
-        <Button variant="outlined" startIcon={<FileUploadOutlinedIcon />} onClick={openImportDialog} sx={ghostSx}>
-          Import
-        </Button>
-        <Button
-          variant="outlined"
-          startIcon={presentMode ? <CloseIcon /> : <SlideshowOutlinedIcon />}
-          onClick={togglePresentMode}
-          sx={ghostSx}
-        >
-          {presentMode ? "Exit" : "Present"}
-        </Button>
+        <Tooltip title="Create a new project">
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => openProjectDialog()}>
+            New Project
+          </Button>
+        </Tooltip>
+        <Tooltip title="Import from JSON or CSV, download templates, or export a backup">
+          <Button variant="outlined" startIcon={<FileUploadOutlinedIcon />} onClick={openImportDialog} sx={ghostSx}>
+            Import
+          </Button>
+        </Tooltip>
+        <Tooltip title={presentMode ? "Exit presentation mode" : "Hide the sidebar for presenting"}>
+          <Button
+            variant="outlined"
+            startIcon={presentMode ? <CloseIcon /> : <SlideshowOutlinedIcon />}
+            onClick={togglePresentMode}
+            sx={ghostSx}
+          >
+            {presentMode ? "Exit" : "Present"}
+          </Button>
+        </Tooltip>
         <span className="text-sm text-sky-200">{today}</span>
       </div>
     </header>
