@@ -44,6 +44,8 @@ export interface DashboardContextValue {
   setPhaseList: (list: string[]) => void;
   /** Remove a phase from the list and clear it from tasks (asks for confirmation). Returns whether it was deleted. */
   deletePhase: (phase: string) => boolean;
+  /** Rename a phase in the list and on every task that uses it (keeps its position). */
+  renamePhase: (from: string, to: string) => void;
   replaceData: (data: DashboardData, resetSelection: boolean) => void;
 }
 

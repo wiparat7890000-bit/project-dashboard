@@ -136,6 +136,12 @@ function DashboardShell({ data }: { data: DashboardData }) {
       setDevList: (devList) => updateData((d) => ({ ...d, devList })),
       setDeptList: (deptList) => updateData((d) => ({ ...d, deptList })),
       setPhaseList: (phaseList) => updateData((d) => ({ ...d, phaseList })),
+      renamePhase: (from, to) =>
+        updateData((d) => ({
+          ...d,
+          phaseList: d.phaseList.map((p) => (p === from ? to : p)),
+          tasks: d.tasks.map((t) => (t.phase === from ? { ...t, phase: to } : t)),
+        })),
       deletePhase: (phase) => {
         const used = data.tasks.filter((t) => t.phase === phase).length;
         const message = used

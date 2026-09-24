@@ -138,6 +138,17 @@ export function groupByPhase(tasks: Task[], phaseList: string[]): [Phase, Task[]
   return order.map((p) => [p, groups.get(p)!]);
 }
 
+/**
+ * Check a phase name for add/rename. Returns an error message, or "" if valid.
+ * `current` is the phase being renamed, so a case-only change of its own name is allowed.
+ */
+export function phaseNameError(name: string, phaseList: string[], current?: string) {
+  const trimmed = name.trim();
+  if (!trimmed) return "กรุณาระบุชื่อ Phase";
+  const clash = phaseList.find((p) => p !== current && p.toLowerCase() === trimmed.toLowerCase());
+  return clash ? `มี Phase "${clash}" อยู่แล้ว` : "";
+}
+
 /** Append phases used by tasks that are missing from the list (keeps list order). */
 export function mergePhases(phaseList: string[], tasks: Task[]) {
   const missing = orderPhases(

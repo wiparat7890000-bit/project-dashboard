@@ -7,35 +7,57 @@ import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { phaseStyle } from "@/lib/constants";
+import { phaseNameError } from "@/lib/utils";
 import { useDashboard } from "../DashboardContext";
 
 interface Props {
   /** Called with a newly added phase so the form can select it. */
   onAdded: (phase: string) => void;
+  /** Called after a phase is renamed so the form can follow it if selected. */
+  onRenamed: (from: string, to: string) => void;
   /** Called after a phase is deleted so the form can clear it if selected. */
   onDeleted: (phase: string) => void;
 }
 
-/** Add, remove and reorder phases. Order controls how tasks are grouped and sorted. */
-export default function PhaseManager({ onAdded, onDeleted }: Props) {
-  const { data, setPhaseList, deletePhase } = useDashboard();
+interface EditState {
+  phase: string;
+  value: string;
+  error: string;
+}
+
+/** Add, rename, remove and reorder phases. Order controls how tasks are grouped and sorted. */
+export default function PhaseManager({ onAdded, onRenamed, onDeleted }: Props) {
+  const { data, setPhaseList, deletePhase, renamePhase } = useDashboard();
   const [name, setName] = useState("");
   const [error, setError] = useState("");
+  const [editing, setEditing] = useState<EditState | null>(null);
   const list = data.phaseList;
 
   const add = () => {
+    if (!name.trim()) return;
+    const err = phaseNameError(name, list);
+    if (err) return setError(err);
     const phase = name.trim();
-    if (!phase) return;
-    if (list.some((p) => p.toLowerCase() === phase.toLowerCase())) {
-      setError(`มี Phase "${phase}" อยู่แล้ว`);
-      return;
-    }
     setPhaseList([...list, phase]);
     setName("");
     setError("");
     onAdded(phase);
+  };
+
+  const saveRename = () => {
+    if (!editing) return;
+    const to = editing.value.trim();
+    if (to === editing.phase) return setEditing(null);
+    const err = phaseNameError(to, list, editing.phase);
+    if (err) return setEditing({ ...editing, error: err });
+    renamePhase(editing.phase, to);
+    onRenamed(editing.phase, to);
+    setEditing(null);
   };
 
   const move = (i: number, dir: -1 | 1) => {
@@ -54,18 +76,69 @@ export default function PhaseManager({ onAdded, onDeleted }: Props) {
         <span className="text-xs font-semibold text-slate-600">จัดการรายชื่อ Phase</span>
         <span className="text-[10px] text-slate-400">ลำดับนี้ใช้จัดกลุ่ม task</span>
       </div>
-      <div className="max-h-48 space-y-0.5 overflow-y-auto">
+      <div className="max-h-56 space-y-0.5 overflow-y-auto">
         {!list.length && <div className="px-2 py-1 text-xs text-slate-400">ยังไม่มี Phase — เพิ่มด้านล่าง</div>}
         {list.map((phase, i) => {
           const used = data.tasks.filter((t) => t.phase === phase).length;
+          const isEditing = editing?.phase === phase;
+
+          if (isEditing) {
+            return (
+              <div key={phase} className="flex items-start gap-2 rounded-lg bg-white px-2 py-1.5 shadow-sm">
+                <span className="mt-3 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: phaseStyle(phase).color }} />
+                <TextField
+                  size="small"
+                  fullWidth
+                  autoFocus
+                  value={editing.value}
+                  error={!!editing.error}
+                  helperText={
+                    editing.error ||
+                    (used ? `จะเปลี่ยนชื่อใน ${used} task ที่ใช้ Phase นี้ด้วย` : "Enter เพื่อบันทึก · Esc เพื่อยกเลิก")
+                  }
+                  onChange={(e) => setEditing({ ...editing, value: e.target.value, error: "" })}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      saveRename();
+                    } else if (e.key === "Escape") {
+                      // Cancel the edit without closing the whole dialog.
+                      e.stopPropagation();
+                      setEditing(null);
+                    }
+                  }}
+                  onFocus={(e) => e.target.select()}
+                  slotProps={{ htmlInput: { "aria-label": `Rename phase ${phase}` } }}
+                />
+                <Tooltip title="Save name">
+                  <IconButton size="small" aria-label="Save phase name" onClick={saveRename} className="!mt-0.5 !text-sky-600">
+                    <CheckIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Cancel">
+                  <IconButton size="small" aria-label="Cancel rename" onClick={() => setEditing(null)} className="!mt-0.5">
+                    <CloseIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </Tooltip>
+              </div>
+            );
+          }
+
           return (
             <div key={phase} className="group flex items-center gap-2 rounded-lg px-2 py-0.5 hover:bg-white">
               <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: phaseStyle(phase).color }} />
-              <span className="min-w-0 flex-1 truncate text-sm text-slate-700">{phase}</span>
+              <span className="min-w-0 flex-1 truncate text-sm text-slate-700" onDoubleClick={() => setEditing({ phase, value: phase, error: "" })}>
+                {phase}
+              </span>
               <Tooltip title={`${used} task${used === 1 ? "" : "s"} use this phase`}>
                 <span className="rounded-full bg-slate-200/70 px-1.5 text-[10px] font-semibold text-slate-500">{used}</span>
               </Tooltip>
               <span className="flex opacity-40 transition group-hover:opacity-100">
+                <Tooltip title="Rename (updates all tasks)">
+                  <IconButton size="small" aria-label={`Rename ${phase}`} onClick={() => setEditing({ phase, value: phase, error: "" })} className="hover:!text-sky-600">
+                    <EditOutlinedIcon sx={{ fontSize: 15 }} />
+                  </IconButton>
+                </Tooltip>
                 <Tooltip title="Move up">
                   <span>
                     <IconButton size="small" aria-label={`Move ${phase} up`} disabled={i === 0} onClick={() => move(i, -1)}>

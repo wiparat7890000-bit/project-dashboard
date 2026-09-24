@@ -88,7 +88,11 @@ export default function TaskDialog({ open, taskId, onClose }: Props) {
         </div>
       </div>
       <Collapse in={showPhaseManager} unmountOnExit>
-        <PhaseManager onAdded={(p) => set("phase", p)} onDeleted={(p) => form.phase === p && set("phase", "")} />
+        <PhaseManager
+          onAdded={(p) => set("phase", p)}
+          onRenamed={(from, to) => form.phase === from && set("phase", to)}
+          onDeleted={(p) => form.phase === p && set("phase", "")}
+        />
       </Collapse>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
