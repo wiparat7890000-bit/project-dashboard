@@ -1,270 +1,409 @@
 "use client";
 
-import { useState } from "react";
-import Collapse from "@mui/material/Collapse";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { PRIORITY_STYLE, STATUS_STYLE } from "@/lib/constants";
-import { PRIORITIES, STATUSES, type Project, type Task } from "@/lib/types";
-import { avgProgress, countByStatus, donutColor, formatDate, getProjectStats, groupByPhase, pct, taskProgressColor } from "@/lib/utils";
+import Button from "@mui/material/Button";
+import IconButton from "@mui/material/IconButton";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
+import { NEUTRAL_TAG, PHASE_STYLE, PROJECT_STATUS_STYLE, STATUS_STYLE } from "@/lib/constants";
+import { STATUSES, type Project, type ProjectUpdate } from "@/lib/types";
+import {
+  avgProgress,
+  formatDate,
+  formatLongDate,
+  getProjectOverview,
+  groupByPhase,
+  hasIssue,
+  pct,
+  projectProgressColor,
+  type ProjectOverview,
+} from "@/lib/utils";
 import { useDashboard } from "../DashboardContext";
-import { PhaseBadge } from "../ui/Badges";
-import { Donut, KpiCard, Panel, ProgressBar, type Kpi } from "../ui/Primitives";
-import PhaseTaskCards from "./PhaseTaskCards";
-
-type SectionId = "phase" | "tasks";
+import { HealthIndicator, PriorityBadge, ProjectStatusBadge } from "../ui/Badges";
+import { KpiCard, Panel, ProgressBar, type Kpi } from "../ui/Primitives";
+import TaskList, { TaskFilters, useTaskFilters } from "./TaskList";
 
 export default function ProjectDashboard({ project }: { project: Project }) {
-  const { data, openProjectDialog, openTaskDialog, setTab } = useDashboard();
-  const s = getProjectStats(project, data.tasks);
-  // Collapsed state is remembered per project for the session.
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const isOpen = (id: SectionId) => !collapsed[`${project.id}_${id}`];
-  const toggle = (id: SectionId) => setCollapsed((c) => ({ ...c, [`${project.id}_${id}`]: !c[`${project.id}_${id}`] }));
+  const { data } = useDashboard();
+  const overview = getProjectOverview(project, data.tasks, data.updates);
 
-  const kpis: Kpi[] = [
-    { label: "Total Tasks", value: s.total, icon: "📋", bg: "bg-blue-50", border: "border-blue-200" },
-    { label: "Completed", value: s.counts.Done, icon: "✅", bg: "bg-green-50", border: "border-green-200" },
-    { label: "In Progress", value: s.counts["In Progress"], icon: "⚙️", bg: "bg-sky-50", border: "border-sky-200" },
-    { label: "Overdue", value: s.overdue, icon: "⚠️", bg: "bg-red-50", border: "border-red-200" },
+  return (
+    <div className="animate-slide-in space-y-6">
+      <ProjectHeader project={project} overview={overview} />
+      <KpiSummary overview={overview} />
+      <ProjectProgress overview={overview} />
+      <TaskSection overview={overview} />
+      <LatestUpdate overview={overview} />
+      <UpdateHistory updates={overview.updates} />
+    </div>
+  );
+}
+
+// ── Header ────────────────────────────────────────────────────────────────────
+
+function ProjectHeader({ project, overview }: { project: Project; overview: ProjectOverview }) {
+  const { openProjectDialog, openUpdateDialog } = useDashboard();
+  const { stats, status, health, isAuto, lastUpdated } = overview;
+  const showDaysLeft = stats.daysLeft != null && status !== "Completed";
+
+  const info: { label: string; value: React.ReactNode }[] = [
+    { label: "Project Owner", value: project.owner || "—" },
+    { label: "Start Date", value: formatDate(project.startDate) || "—" },
+    { label: "Target End Date", value: formatDate(project.endDate) || "—" },
+    { label: "Priority", value: <PriorityBadge priority={project.priority} /> },
+    {
+      label: "Project Status",
+      value: (
+        <span className="inline-flex flex-wrap items-center gap-1.5">
+          <ProjectStatusBadge status={status} />
+          {isAuto && <span className="text-[10px] text-slate-400">(suggested)</span>}
+        </span>
+      ),
+    },
+    { label: "Health", value: <HealthIndicator health={health} /> },
+    { label: "Last Updated", value: formatDate(lastUpdated) || "Not updated yet" },
   ];
 
-  const activeTasks = s.tasks.filter((t) => t.status === "Not Start" || t.status === "Plan" || t.status === "In Progress");
-  const hiddenCount = s.tasks.length - activeTasks.length;
-
   return (
-    <div className="animate-slide-in">
-      {/* Banner */}
+    <Panel className="overflow-hidden">
       <div
-        className="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl p-5 text-white shadow-lg"
+        className="flex flex-wrap items-start justify-between gap-4 p-5 text-white"
         style={{ background: `linear-gradient(135deg, #0f172a, ${project.color})` }}
       >
-        <div>
-          <div className="mb-1 text-xs uppercase tracking-widest text-white/60">Project</div>
-          <h2 className="text-xl font-bold">{project.name}</h2>
+        <div className="min-w-0">
+          <div className="mb-1 text-xs uppercase tracking-widest text-white/60">Project Dashboard</div>
+          <h2 className="text-xl font-bold leading-snug">{project.name}</h2>
           {project.description && <div className="mt-1 text-sm text-white/70">{project.description}</div>}
-          <div className="mt-2 flex flex-wrap gap-4 text-xs text-white/60">
-            {project.owner && <span>👤 {project.owner}</span>}
-            {project.department && <span>🏢 {project.department}</span>}
-            <span>
-              📅 {formatDate(project.startDate)} → {formatDate(project.endDate)}
-            </span>
+          {project.department && <div className="mt-2 text-xs text-white/60">🏢 {project.department}</div>}
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <Button variant="contained" startIcon={<AddIcon />} onClick={openUpdateDialog}>
+            Update Project
+          </Button>
+          <div className="flex items-center gap-3 text-xs text-white/70">
+            {showDaysLeft && (
+              <span>{stats.daysLeft! < 0 ? `${Math.abs(stats.daysLeft!)} days past target` : `${stats.daysLeft} days left`}</span>
+            )}
+            <button type="button" onClick={() => openProjectDialog(project.id)} className="underline hover:text-white">
+              Edit Project
+            </button>
           </div>
         </div>
-        <div className="text-right">
-          {s.daysLeft != null && (
-            <>
-              <div className="text-3xl font-bold">{Math.abs(s.daysLeft)}</div>
-              <div className="text-xs text-white/60">{s.daysLeft < 0 ? "days overdue" : "days left"}</div>
-            </>
-          )}
-          <button type="button" onClick={() => openProjectDialog(project.id)} className="mt-2 text-xs text-white/60 underline hover:text-white">
-            Edit Project
-          </button>
-        </div>
       </div>
-
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {kpis.map((k) => (
-          <KpiCard key={k.label} kpi={k} />
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-3 px-5 py-4 sm:grid-cols-4 xl:grid-cols-7">
+        {info.map((i) => (
+          <div key={i.label} className="min-w-0">
+            <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{i.label}</dt>
+            <dd className="mt-1 text-sm font-medium text-slate-700">{i.value}</dd>
+          </div>
         ))}
-      </div>
+      </dl>
+    </Panel>
+  );
+}
 
-      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Panel className="flex flex-col items-center p-6">
-          <div className="mb-4 self-start text-sm font-semibold text-slate-600">Overall Progress</div>
-          <Donut value={s.avg} color={donutColor(s.avg)} caption="Complete" />
-        </Panel>
+// ── KPI ───────────────────────────────────────────────────────────────────────
 
-        <Panel className="p-6">
-          <div className="mb-4 text-sm font-semibold text-slate-600">Status Breakdown</div>
-          <div className="space-y-2.5">
-            {STATUSES.map((st) => (
-              <div key={st}>
-                <div className="mb-1 flex justify-between text-xs">
-                  <span className="font-medium text-slate-700">{st}</span>
-                  <span className="text-slate-400">
-                    {s.counts[st]}/{s.total}
+function KpiSummary({ overview }: { overview: ProjectOverview }) {
+  const { stats, openIssues } = overview;
+  const kpis: Kpi[] = [
+    {
+      label: "Overall Progress",
+      value: `${stats.avg}%`,
+      icon: "📈",
+      bg: "bg-sky-50",
+      border: "border-sky-200",
+      footer: <ProgressBar value={stats.avg} color={projectProgressColor(stats.avg)} className="mt-1.5 h-1.5" />,
+    },
+    {
+      label: "Completed Tasks",
+      value: (
+        <>
+          {stats.completed} <span className="text-base font-semibold text-slate-400">/ {stats.total}</span>
+        </>
+      ),
+      icon: "✅",
+      bg: "bg-green-50",
+      border: "border-green-200",
+    },
+    { label: "Open Issues", value: openIssues, icon: "🚩", bg: "bg-amber-50", border: "border-amber-200" },
+    { label: "Delayed Tasks", value: stats.delayed, icon: "⚠️", bg: "bg-red-50", border: "border-red-200" },
+  ];
+  return (
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {kpis.map((k) => (
+        <KpiCard key={k.label} kpi={k} />
+      ))}
+    </div>
+  );
+}
+
+// ── Project progress by workstream ───────────────────────────────────────────
+
+function ProjectProgress({ overview }: { overview: ProjectOverview }) {
+  const { stats } = overview;
+  const groups = groupByPhase(stats.tasks);
+
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <Panel className="p-6 lg:col-span-2">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-slate-600">Project Progress</h3>
+          <span className="text-xs text-slate-400">by workstream</span>
+        </div>
+        {!groups.length && <div className="py-6 text-center text-sm text-slate-400">No tasks yet — add a task to track progress.</div>}
+        <div className="space-y-3.5">
+          {groups.map(([phase, tasks]) => {
+            const avg = avgProgress(tasks);
+            const done = tasks.filter((t) => t.progress >= 100).length;
+            const color = (phase ? PHASE_STYLE[phase] : NEUTRAL_TAG).color;
+            return (
+              <div key={phase || "none"} className="grid grid-cols-[minmax(0,11rem)_1fr_auto] items-center gap-3 sm:grid-cols-[minmax(0,13rem)_1fr_auto]">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} />
+                  <span className="truncate text-sm font-medium text-slate-700" title={phase || "No phase"}>
+                    {phase || "No phase"}
                   </span>
                 </div>
-                <ProgressBar value={pct(s.counts[st], s.total)} color={STATUS_STYLE[st].bar} />
-              </div>
-            ))}
-          </div>
-        </Panel>
-
-        <Panel className="p-6">
-          <div className="mb-4 text-sm font-semibold text-slate-600">Priority Distribution</div>
-          <div className="space-y-3">
-            {PRIORITIES.map((pr) => {
-              const count = s.tasks.filter((t) => t.priority === pr).length;
-              const style = PRIORITY_STYLE[pr];
-              return (
-                <div key={pr} className="flex items-center gap-3">
-                  <div className="w-16 rounded-full px-2.5 py-1 text-center text-xs font-semibold" style={{ background: style.bg, color: style.color }}>
-                    {pr}
-                  </div>
-                  <ProgressBar value={pct(count, s.total)} color={style.bar} className="h-2 flex-1" />
-                  <div className="w-4 text-xs text-slate-400">{count}</div>
+                <ProgressBar value={avg} color={projectProgressColor(avg)} className="h-2.5" />
+                <div className="flex w-20 items-center justify-end gap-2 text-xs">
+                  <span className="text-slate-400">
+                    {done}/{tasks.length}
+                  </span>
+                  <span className="w-9 text-right font-bold text-slate-700">{avg}%</span>
                 </div>
-              );
-            })}
-          </div>
-        </Panel>
-      </div>
-
-      {/* Phase summary */}
-      <Panel className="mb-6 overflow-hidden">
-        <CollapsibleHeader title="📐 Phase Summary" open={isOpen("phase")} onToggle={() => toggle("phase")} />
-        <Collapse in={isOpen("phase")}>
-          <PhaseSummary tasks={s.tasks} />
-        </Collapse>
-      </Panel>
-
-      {/* Active task overview */}
-      <Panel className="overflow-hidden">
-        <CollapsibleHeader
-          title="Task Overview"
-          open={isOpen("tasks")}
-          onToggle={() => toggle("tasks")}
-          extra={
-            <div className="hidden gap-1.5 text-xs font-semibold sm:flex">
-              {(["Not Start", "Plan", "In Progress"] as const).map((st) => (
-                <span key={st} className="rounded-full px-2 py-0.5" style={{ background: STATUS_STYLE[st].bg, color: STATUS_STYLE[st].color }}>
-                  {STATUS_STYLE[st].icon} {st}
-                </span>
-              ))}
-            </div>
-          }
-          action={
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setTab("tasks");
-              }}
-              className="text-xs font-medium text-sky-500 hover:text-sky-700"
-            >
-              View All →
-            </button>
-          }
-        />
-        <Collapse in={isOpen("tasks")}>
-          <PhaseTaskCards
-            tasks={activeTasks}
-            onCardClick={(t) => openTaskDialog(t.id)}
-            empty={
-              s.tasks.length ? (
-                "🎉 ทุก task เสร็จสิ้นหรือยกเลิกแล้ว"
-              ) : (
-                <>
-                  No tasks yet.{" "}
-                  <button type="button" onClick={() => openTaskDialog()} className="text-sky-500 underline">
-                    Add your first task
-                  </button>
-                </>
-              )
-            }
-          />
-          {hiddenCount > 0 && activeTasks.length > 0 && (
-            <div className="bg-slate-50 px-6 py-3 text-center text-xs text-slate-400">
-              แสดง {activeTasks.length} tasks ที่ยังดำเนินการอยู่ · ซ่อน {hiddenCount} tasks (Done/Cancelled) ·{" "}
-              <button type="button" onClick={() => setTab("tasks")} className="text-sky-500 hover:underline">
-                ดูทั้งหมด
-              </button>
-            </div>
-          )}
-        </Collapse>
-      </Panel>
-    </div>
-  );
-}
-
-function CollapsibleHeader({
-  title,
-  open,
-  onToggle,
-  extra,
-  action,
-}: {
-  title: string;
-  open: boolean;
-  onToggle: () => void;
-  extra?: React.ReactNode;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      aria-expanded={open}
-      onClick={onToggle}
-      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onToggle()}
-      className="flex cursor-pointer select-none items-center justify-between border-b border-slate-100 px-6 py-4"
-    >
-      <div className="flex items-center gap-3">
-        <div className="text-sm font-semibold text-slate-700">{title}</div>
-        {extra}
-      </div>
-      <div className="flex items-center gap-3">
-        {action}
-        <ExpandMoreIcon className={`text-slate-400 transition-transform duration-200 ${open ? "" : "-rotate-90"}`} fontSize="small" />
-      </div>
-    </div>
-  );
-}
-
-function PhaseSummary({ tasks }: { tasks: Task[] }) {
-  const groups = groupByPhase(tasks);
-
-  const th = "px-4 py-3 text-center";
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead className="bg-slate-50">
-          <tr className="text-xs uppercase tracking-wide text-slate-500">
-            <th className="px-4 py-3 text-left">Phase</th>
-            <th className={th}>Total</th>
-            {STATUSES.map((s) => (
-              <th key={s} className={th}>
-                {s}
-              </th>
-            ))}
-            <th className="min-w-[140px] px-4 py-3 text-left">Progress</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-50">
-          {!groups.length && (
-            <tr>
-              <td colSpan={8} className="py-8 text-center text-sm text-slate-400">
-                ยังไม่มี task
-              </td>
-            </tr>
-          )}
-          {groups.map(([ph, pt]) => {
-            const counts = countByStatus(pt);
-            const avg = avgProgress(pt);
-            return (
-              <tr key={ph || "none"} className="hover:bg-slate-50">
-                <td className="px-4 py-3">
-                  <PhaseBadge phase={ph} />
-                </td>
-                <td className="px-4 py-3 text-center text-sm font-bold text-slate-700">{pt.length}</td>
-                {STATUSES.map((st) => (
-                  <td key={st} className="px-4 py-3 text-center text-xs font-medium" style={{ color: STATUS_STYLE[st].color }}>
-                    {counts[st] || "—"}
-                  </td>
-                ))}
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <ProgressBar value={avg} color={taskProgressColor(avg)} className="h-2 flex-1" />
-                    <span className="w-8 text-xs font-semibold text-slate-600">{avg}%</span>
-                  </div>
-                </td>
-              </tr>
+              </div>
             );
           })}
-        </tbody>
-      </table>
+        </div>
+      </Panel>
+
+      <Panel className="p-6">
+        <h3 className="mb-4 text-sm font-semibold text-slate-600">Task Status</h3>
+        <div className="space-y-2.5">
+          {STATUSES.map((st) => (
+            <div key={st}>
+              <div className="mb-1 flex justify-between text-xs">
+                <span className="font-medium text-slate-700">{st}</span>
+                <span className="text-slate-400">
+                  {stats.counts[st]}/{stats.total}
+                </span>
+              </div>
+              <ProgressBar value={pct(stats.counts[st], stats.total)} color={STATUS_STYLE[st].bar} />
+            </div>
+          ))}
+        </div>
+      </Panel>
     </div>
+  );
+}
+
+// ── Tasks ─────────────────────────────────────────────────────────────────────
+
+function SectionTitle({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
+  return (
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center gap-3">
+        <div className="h-5 w-1 rounded-full bg-sky-500" />
+        <h3 className="text-base font-bold text-slate-700">{children}</h3>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function TaskSection({ overview }: { overview: ProjectOverview }) {
+  const { openTaskDialog } = useDashboard();
+  const { filters, setFilters, apply } = useTaskFilters();
+  const tasks = apply(overview.stats.tasks);
+  const filtered = !!(filters.status || filters.priority);
+
+  return (
+    <section>
+      <SectionTitle
+        action={
+          <div className="flex flex-wrap gap-2">
+            <TaskFilters filters={filters} onChange={setFilters} />
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => openTaskDialog()}>
+              Add Task
+            </Button>
+          </div>
+        }
+      >
+        Task / Milestone
+      </SectionTitle>
+      <TaskList
+        tasks={tasks}
+        grouped
+        empty={
+          filtered ? (
+            <div className="font-medium">No tasks match the filters</div>
+          ) : (
+            <>
+              <div className="font-medium">No tasks yet</div>
+              <button type="button" onClick={() => openTaskDialog()} className="mt-3 text-sm text-sky-500 underline">
+                Add your first task
+              </button>
+            </>
+          )
+        }
+      />
+    </section>
+  );
+}
+
+// ── Latest update ─────────────────────────────────────────────────────────────
+
+function IssueStatusControl({ update }: { update: ProjectUpdate }) {
+  const { setIssueStatus } = useDashboard();
+  if (!hasIssue(update.issueRisk)) return null;
+  const open = update.issueStatus === "Open";
+  return (
+    <span className="ml-2 inline-flex items-center gap-2 align-middle">
+      <span
+        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${open ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700"}`}
+      >
+        {update.issueStatus}
+      </span>
+      <button
+        type="button"
+        onClick={() => setIssueStatus(update.id, open ? "Resolved" : "Open")}
+        className="text-[11px] font-medium text-sky-500 hover:text-sky-700 hover:underline"
+      >
+        {open ? "Mark resolved" : "Reopen"}
+      </button>
+    </span>
+  );
+}
+
+function LatestUpdate({ overview }: { overview: ProjectOverview }) {
+  const { openUpdateDialog } = useDashboard();
+  const u = overview.latest;
+
+  return (
+    <section>
+      <SectionTitle>Latest Project Update</SectionTitle>
+      {!u ? (
+        <Panel className="py-10 text-center text-slate-400">
+          <div className="mb-2 text-4xl">📝</div>
+          <div className="mb-3 font-medium">No project updates yet</div>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={openUpdateDialog}>
+            Update Project
+          </Button>
+        </Panel>
+      ) : (
+        <Panel className="overflow-hidden">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-slate-100 px-6 py-4">
+            <div className="text-lg font-bold text-slate-800">{formatLongDate(u.updateDate)}</div>
+            <Stat label="Status">
+              <ProjectStatusBadge status={u.projectStatus} />
+            </Stat>
+            <Stat label="Health">
+              <HealthIndicator health={u.healthStatus} />
+            </Stat>
+            <Stat label="Progress">
+              <span className="flex items-center gap-2">
+                <ProgressBar value={u.progress} color={projectProgressColor(u.progress)} className="h-1.5 w-20" />
+                <b className="text-sm text-slate-700">{u.progress}%</b>
+              </span>
+            </Stat>
+            {u.updatedBy && <div className="ml-auto text-xs text-slate-400">Updated by <b className="text-slate-600">{u.updatedBy}</b></div>}
+          </div>
+          <div className="grid grid-cols-1 gap-x-8 gap-y-4 px-6 py-5 md:grid-cols-2">
+            <Field label="Key Achievement">{u.achievement}</Field>
+            <Field label="Issue / Risk">
+              {u.issueRisk}
+              <IssueStatusControl update={u} />
+            </Field>
+            <Field label="Next Action">{u.nextAction}</Field>
+            <Field label="Next Milestone">
+              {u.nextMilestone && (
+                <>
+                  {u.nextMilestone}
+                  {u.nextMilestoneDate && <div className="text-xs text-slate-400">Target: {formatLongDate(u.nextMilestoneDate)}</div>}
+                </>
+              )}
+            </Field>
+            {u.remark && (
+              <Field label="Remark" className="md:col-span-2">
+                {u.remark}
+              </Field>
+            )}
+          </div>
+        </Panel>
+      )}
+    </section>
+  );
+}
+
+function Stat({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</div>
+      <div className="mt-0.5">{children}</div>
+    </div>
+  );
+}
+
+function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
+  const empty = children == null || children === "" || children === false;
+  return (
+    <div className={className}>
+      <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</div>
+      <div className="whitespace-pre-line text-sm text-slate-700">{empty ? <span className="text-slate-300">—</span> : children}</div>
+    </div>
+  );
+}
+
+// ── History ───────────────────────────────────────────────────────────────────
+
+function UpdateHistory({ updates }: { updates: ProjectUpdate[] }) {
+  const { deleteProjectUpdate } = useDashboard();
+  if (!updates.length) return null;
+
+  return (
+    <section>
+      <SectionTitle action={<span className="text-xs text-slate-400">{updates.length} updates</span>}>Project Update History</SectionTitle>
+      <Panel className="px-6 py-5">
+        <ol className="relative">
+          {updates.map((u, i) => (
+            <li key={u.id} className="relative flex gap-4 pb-6 last:pb-0">
+              {i < updates.length - 1 && <span className="absolute left-[7px] top-5 h-full w-0.5 bg-slate-200" aria-hidden />}
+              <span
+                className="relative z-[1] mt-1 h-4 w-4 shrink-0 rounded-full border-[3px] border-white shadow"
+                style={{ background: PROJECT_STATUS_STYLE[u.projectStatus].bar }}
+                aria-hidden
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-bold text-slate-800">{formatLongDate(u.updateDate)}</span>
+                  {i === 0 && <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">Latest</span>}
+                  <ProjectStatusBadge status={u.projectStatus} />
+                  <HealthIndicator health={u.healthStatus} />
+                  <span className="text-xs text-slate-500">
+                    Progress: <b className="text-slate-700">{u.progress}%</b>
+                  </span>
+                  <IconButton
+                    size="small"
+                    aria-label={`Delete update of ${formatLongDate(u.updateDate)}`}
+                    onClick={() => deleteProjectUpdate(u.id)}
+                    className="!ml-auto text-slate-300 hover:!text-red-400"
+                  >
+                    <DeleteOutlinedIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </div>
+                {u.achievement && <p className="mt-1 whitespace-pre-line text-sm text-slate-600">{u.achievement}</p>}
+                {hasIssue(u.issueRisk) && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    🚩 {u.issueRisk}
+                    <IssueStatusControl update={u} />
+                  </p>
+                )}
+                {u.updatedBy && <p className="mt-1 text-xs text-slate-400">Updated by {u.updatedBy}</p>}
+              </div>
+            </li>
+          ))}
+        </ol>
+      </Panel>
+    </section>
   );
 }

@@ -1,5 +1,5 @@
-import { NEUTRAL_TAG, PHASE_STYLE, PRIORITY_STYLE, STATUS_STYLE, type TagStyle } from "@/lib/constants";
-import type { Phase, Priority, Status } from "@/lib/types";
+import { HEALTH_STYLE, NEUTRAL_TAG, PHASE_STYLE, PRIORITY_STYLE, PROJECT_STATUS_STYLE, STATUS_STYLE, type TagStyle } from "@/lib/constants";
+import type { HealthStatus, Phase, Priority, ProjectStatus, Status } from "@/lib/types";
 
 function Tag({ tag, children, className = "" }: { tag: TagStyle; children: React.ReactNode; className?: string }) {
   return (
@@ -30,8 +30,38 @@ export function PhaseBadge({ phase, size = "md" }: { phase: Phase | ""; size?: "
   );
 }
 
-export function OverdueBadge() {
-  return <Tag tag={{ bg: "#fee2e2", color: "#dc2626" }}>⚠ Overdue</Tag>;
+export function DelayedBadge({ days }: { days: number }) {
+  return (
+    <Tag tag={{ bg: "#fee2e2", color: "#dc2626" }}>
+      ⚠ Delayed · {days} {days === 1 ? "day" : "days"} delayed
+    </Tag>
+  );
+}
+
+export function ProjectStatusBadge({ status, size = "md" }: { status: ProjectStatus; size?: "md" | "lg" }) {
+  return (
+    <Tag tag={PROJECT_STATUS_STYLE[status]} className={size === "lg" ? "!px-3 !py-1 !text-xs" : ""}>
+      ● {status}
+    </Tag>
+  );
+}
+
+export function HealthIndicator({ health, variant = "tag" }: { health: HealthStatus; variant?: "tag" | "plain" }) {
+  const h = HEALTH_STYLE[health];
+  if (variant === "plain") {
+    return (
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+        <span className="h-2.5 w-2.5 rounded-full" style={{ background: h.dot }} />
+        {health}
+      </span>
+    );
+  }
+  return (
+    <Tag tag={h} className="!inline-flex items-center gap-1.5">
+      <span className="h-2 w-2 rounded-full" style={{ background: h.dot }} />
+      {health}
+    </Tag>
+  );
 }
 
 export function DevTags({ devs, short = false }: { devs: string[]; short?: boolean }) {

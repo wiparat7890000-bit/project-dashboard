@@ -1,7 +1,7 @@
 import { toISODate } from "./utils";
-import type { Project, Task } from "./types";
+import type { Project, ProjectUpdate, Task } from "./types";
 
-export function createSampleData(): { projects: Project[]; tasks: Task[] } {
+export function createSampleData(): { projects: Project[]; tasks: Task[]; updates: ProjectUpdate[] } {
   const today = new Date();
   const add = (n: number) => {
     const d = new Date(today);
@@ -11,13 +11,18 @@ export function createSampleData(): { projects: Project[]; tasks: Task[] } {
   const monthStart = toISODate(new Date(today.getFullYear(), today.getMonth() - 1, 1));
 
   const projects: Project[] = [
-    { id: "p1", name: "Website Redesign", description: "Redesign corporate website", owner: "Somchai K.", department: "Information Technology", startDate: monthStart, endDate: add(60), color: "#0ea5e9" },
-    { id: "p2", name: "ERP System Upgrade", description: "Upgrade internal ERP platform", owner: "Apinya W.", department: "Information Technology", startDate: add(-20), endDate: add(90), color: "#8b5cf6" },
-    { id: "p3", name: "Data Analytics Platform", description: "Build BI & analytics dashboard", owner: "Nattaya P.", department: "Management", startDate: add(-5), endDate: add(45), color: "#10b981" },
+    { id: "rd1", name: "RD iCloud RD Master & Configuration Implementation", description: "Implement RD master data and configuration on iCloud", owner: "Wiparat", department: "Information Technology", priority: "Medium", startDate: "2025-11-25", endDate: "2026-02-13", color: "#10b981" },
+    { id: "p1", name: "Website Redesign", description: "Redesign corporate website", owner: "Somchai K.", department: "Information Technology", priority: "High", startDate: monthStart, endDate: add(60), color: "#0ea5e9" },
+    { id: "p2", name: "ERP System Upgrade", description: "Upgrade internal ERP platform", owner: "Apinya W.", department: "Information Technology", priority: "High", startDate: add(-20), endDate: add(90), color: "#8b5cf6" },
+    { id: "p3", name: "Data Analytics Platform", description: "Build BI & analytics dashboard", owner: "Nattaya P.", department: "Management", priority: "Medium", startDate: add(-5), endDate: add(45), color: "#10b981" },
   ];
 
   const base = { phase: "" as const, notes: "" };
   const tasks: Task[] = [
+    { ...base, id: "rd-t1", projectId: "rd1", name: "Review Data Base Phase 1", owner: "Wiparat", dev: ["Wiparat"], phase: "Functional Requirement", startDate: "2025-11-25", endDate: "2026-01-31", status: "Done", priority: "Medium", progress: 100 },
+    { ...base, id: "rd-t2", projectId: "rd1", name: "Development", owner: "Wiparat", dev: ["Wiparat"], phase: "Development", startDate: "2025-12-01", endDate: "2026-01-05", status: "Done", priority: "Medium", progress: 100 },
+    { ...base, id: "rd-t3", projectId: "rd1", name: "ISD - Unit Test", owner: "Wiparat", dev: ["Wiparat"], phase: "Unit Test", startDate: "2025-12-01", endDate: "2026-01-15", status: "Done", priority: "Medium", progress: 100 },
+    { ...base, id: "rd-t4", projectId: "rd1", name: "User - UAT", owner: "Wiparat", dev: ["Wiparat"], phase: "UAT", startDate: "2026-01-16", endDate: "2026-02-13", status: "Done", priority: "Medium", progress: 100 },
     { ...base, id: "t1", projectId: "p1", name: "Requirements & Wireframes", owner: "Somchai K.", dev: ["Pimchanok T."], startDate: monthStart, endDate: add(-10), status: "Done", priority: "High", progress: 100, phase: "Functional Requirement", notes: "Approved by stakeholders." },
     { ...base, id: "t2", projectId: "p1", name: "UI/UX Design", owner: "Pimchanok T.", dev: ["Pimchanok T.", "Siriporn K."], startDate: add(-15), endDate: add(10), status: "In Progress", priority: "High", progress: 70, phase: "Design Screen", notes: "Final review pending." },
     { ...base, id: "t3", projectId: "p1", name: "Frontend Development", owner: "Chai P.", dev: ["Chai P."], startDate: add(-5), endDate: add(25), status: "Plan", priority: "Medium", progress: 10, phase: "Development" },
@@ -32,5 +37,18 @@ export function createSampleData(): { projects: Project[]; tasks: Task[] } {
     { ...base, id: "t12", projectId: "p3", name: "User Training", owner: "Somchai K.", dev: [], startDate: add(30), endDate: add(40), status: "Not Start", priority: "Low", progress: 0, phase: "Support" },
   ];
 
-  return { projects, tasks };
+  const update = (u: Omit<ProjectUpdate, "projectId" | "issueStatus" | "remark" | "createdAt"> & Partial<ProjectUpdate>): ProjectUpdate => ({
+    projectId: "rd1",
+    issueStatus: "Closed",
+    remark: "",
+    createdAt: `${u.updateDate}T00:00:00.000Z`,
+    ...u,
+  });
+  const updates: ProjectUpdate[] = [
+    update({ id: "rd-u1", updateDate: "2026-09-10", progress: 70, projectStatus: "In Progress", healthStatus: "On Track", achievement: "Development completed.", issueRisk: "UAT schedule depends on key-user availability.", issueStatus: "Resolved", nextAction: "Start user UAT.", nextMilestone: "User UAT", nextMilestoneDate: "2026-09-17", updatedBy: "Wiparat" }),
+    update({ id: "rd-u2", updateDate: "2026-09-17", progress: 85, projectStatus: "In Progress", healthStatus: "On Track", achievement: "UAT completed.", issueRisk: "No outstanding issue", nextAction: "Close remaining UAT sign-off.", nextMilestone: "Go-live sign-off", nextMilestoneDate: "2026-09-24", updatedBy: "Wiparat" }),
+    update({ id: "rd-u3", updateDate: "2026-09-24", progress: 100, projectStatus: "Completed", healthStatus: "On Track", achievement: "Completed UAT and project implementation.", issueRisk: "No outstanding issue", nextAction: "Prepare project handover.", nextMilestone: "Project Handover", nextMilestoneDate: "2026-09-30", updatedBy: "Wiparat" }),
+  ];
+
+  return { projects, tasks, updates };
 }

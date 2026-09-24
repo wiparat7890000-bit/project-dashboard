@@ -8,13 +8,13 @@ import {
   countByStatus,
   donutColor,
   formatDate,
-  getProjectStats,
-  isOverdue,
+  getProjectOverview,
+  isDelayed,
   projectProgressColor,
   todayISO,
 } from "@/lib/utils";
 import { useDashboard } from "../DashboardContext";
-import { ColorDot } from "../ui/Badges";
+import { ColorDot, HealthIndicator, ProjectStatusBadge } from "../ui/Badges";
 import { DaysLeft, Donut, KpiCard, Panel, ProgressBar, SectionHeading, StackedBar, type Kpi } from "../ui/Primitives";
 import TaskTable from "./TaskTable";
 
@@ -25,16 +25,19 @@ export default function AllProjectsDashboard() {
   const { projects, tasks } = data;
   const today = todayISO();
   const counts = countByStatus(tasks);
-  const overdue = tasks.filter((t) => isOverdue(t, today)).length;
+  const delayed = tasks.filter((t) => isDelayed(t, today)).length;
   const avg = avgProgress(tasks);
-  const stats = projects.map((p) => ({ project: p, stats: getProjectStats(p, tasks) }));
+  const stats = projects.map((p) => {
+    const overview = getProjectOverview(p, tasks, data.updates);
+    return { project: p, stats: overview.stats, overview };
+  });
 
   const kpis: Kpi[] = [
     { label: "Total Projects", value: projects.length, icon: "🗂️", bg: "bg-indigo-50", border: "border-indigo-200" },
     { label: "Total Tasks", value: tasks.length, icon: "📋", bg: "bg-blue-50", border: "border-blue-200" },
     { label: "Completed", value: counts.Done, icon: "✅", bg: "bg-green-50", border: "border-green-200" },
     { label: "In Progress", value: counts["In Progress"], icon: "⚙️", bg: "bg-sky-50", border: "border-sky-200" },
-    { label: "Overdue", value: overdue, icon: "⚠️", bg: "bg-red-50", border: "border-red-200" },
+    { label: "Delayed Tasks", value: delayed, icon: "⚠️", bg: "bg-red-50", border: "border-red-200" },
   ];
 
   return (
@@ -98,7 +101,7 @@ export default function AllProjectsDashboard() {
         </SectionHeading>
       </div>
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {stats.map(({ project: p, stats: s }) => (
+        {stats.map(({ project: p, stats: s, overview }) => (
           <Panel
             key={p.id}
             role="button"
@@ -113,6 +116,10 @@ export default function AllProjectsDashboard() {
                 <div className="text-sm font-semibold text-slate-800">{p.name}</div>
               </div>
               <Donut value={s.avg} color={projectProgressColor(s.avg)} size="sm" />
+            </div>
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <ProjectStatusBadge status={overview.status} />
+              <HealthIndicator health={overview.health} />
             </div>
             <div className="mb-3 space-y-0.5 text-xs text-slate-400">
               {p.owner && <div>👤 {p.owner}</div>}
@@ -138,8 +145,8 @@ export default function AllProjectsDashboard() {
               </div>
               <span className="text-slate-400">{s.total} tasks</span>
             </div>
-            {s.overdue > 0 && (
-              <div className="mt-2 rounded-lg bg-red-50 px-2 py-1 text-xs font-medium text-red-500">⚠ {s.overdue} overdue</div>
+            {s.delayed > 0 && (
+              <div className="mt-2 rounded-lg bg-red-50 px-2 py-1 text-xs font-medium text-red-500">⚠ {s.delayed} delayed</div>
             )}
           </Panel>
         ))}
@@ -163,7 +170,7 @@ export default function AllProjectsDashboard() {
           <div className="flex gap-2 text-xs font-semibold">
             <span className="rounded-full bg-green-100 px-2 py-1 text-green-700">✓ {counts.Done} Done</span>
             <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700">⚙ {counts["In Progress"]} Active</span>
-            {overdue > 0 && <span className="rounded-full bg-red-100 px-2 py-1 text-red-600">⚠ {overdue} Overdue</span>}
+            {delayed > 0 && <span className="rounded-full bg-red-100 px-2 py-1 text-red-600">⚠ {delayed} Delayed</span>}
           </div>
         </div>
         <TaskTable

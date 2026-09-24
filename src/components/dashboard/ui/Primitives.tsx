@@ -91,10 +91,12 @@ export function Donut({
 
 export interface Kpi {
   label: string;
-  value: number;
+  value: React.ReactNode;
   icon: string;
   bg: string;
   border: string;
+  /** Extra content under the value, e.g. a progress bar. */
+  footer?: React.ReactNode;
 }
 
 export function KpiCard({ kpi, compact = false }: { kpi: Kpi; compact?: boolean }) {
@@ -103,9 +105,10 @@ export function KpiCard({ kpi, compact = false }: { kpi: Kpi; compact?: boolean 
       <div className={`${kpi.bg} flex ${compact ? "h-11 w-11" : "h-12 w-12"} shrink-0 items-center justify-center rounded-xl text-xl`}>
         {kpi.icon}
       </div>
-      <div>
+      <div className="min-w-0 flex-1">
         <div className="text-2xl font-bold text-slate-800">{kpi.value}</div>
         <div className="text-xs font-medium leading-tight text-slate-500">{kpi.label}</div>
+        {kpi.footer}
       </div>
     </Panel>
   );

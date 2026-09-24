@@ -1,4 +1,17 @@
-import { PHASES, PRIORITIES, type DashboardData, type Phase, type Priority, type Project, type Status, type Task } from "./types";
+import {
+  HEALTH_STATUSES,
+  ISSUE_STATUSES,
+  PHASES,
+  PRIORITIES,
+  PROJECT_STATUSES,
+  type DashboardData,
+  type Phase,
+  type Priority,
+  type Project,
+  type ProjectUpdate,
+  type Status,
+  type Task,
+} from "./types";
 import { colorFor, downloadFile, todayISO, toISODate, uid } from "./utils";
 
 type Row = Record<string, string>;
@@ -93,6 +106,7 @@ export function normalizeProject(input: unknown, index: number): Project {
     description: str(p.description ?? p.desc),
     owner: str(p.owner),
     department: str(p.department),
+    priority: normPriority(p.priority),
     startDate: normDate(p.startDate ?? p.start),
     endDate: normDate(p.endDate ?? p.end),
     color: str(p.color) || colorFor(index),
@@ -115,6 +129,32 @@ export function normalizeTask(input: unknown): Task {
     priority: normPriority(t.priority),
     progress: status === "Done" ? 100 : clampProgress(t.progress),
     notes: str(t.notes),
+  };
+}
+
+function pick<T extends string>(options: readonly T[], v: unknown, fallback: T): T {
+  const key = squash(str(v));
+  return options.find((o) => squash(o) === key) ?? fallback;
+}
+
+export function normalizeUpdate(input: unknown): ProjectUpdate {
+  const u = (input ?? {}) as Record<string, unknown>;
+  return {
+    id: str(u.id) || uid("u"),
+    projectId: str(u.projectId),
+    updateDate: normDate(u.updateDate) || todayISO(),
+    progress: clampProgress(u.progress),
+    projectStatus: pick(PROJECT_STATUSES, u.projectStatus, "In Progress"),
+    healthStatus: pick(HEALTH_STATUSES, u.healthStatus, "On Track"),
+    achievement: str(u.achievement),
+    issueRisk: str(u.issueRisk),
+    issueStatus: pick(ISSUE_STATUSES, u.issueStatus, "Open"),
+    nextAction: str(u.nextAction),
+    nextMilestone: str(u.nextMilestone),
+    nextMilestoneDate: normDate(u.nextMilestoneDate),
+    remark: str(u.remark),
+    updatedBy: str(u.updatedBy),
+    createdAt: str(u.createdAt) || new Date().toISOString(),
   };
 }
 
@@ -181,9 +221,10 @@ export function importJson(raw: string, merge: boolean, current: DashboardData):
   if (typeof parsed !== "object" || parsed === null)
     throw new Error("JSON ต้องเป็น object ที่มี projects และ tasks");
 
-  const obj = parsed as { projects?: unknown; tasks?: unknown };
+  const obj = parsed as { projects?: unknown; tasks?: unknown; updates?: unknown };
   const inP = Array.isArray(obj.projects) ? obj.projects : [];
   const inT = Array.isArray(obj.tasks) ? obj.tasks : [];
+  const inU = Array.isArray(obj.updates) ? obj.updates : [];
   if (!inP.length && !inT.length) throw new Error("ไม่พบข้อมูล projects หรือ tasks ใน JSON");
 
   // Re-key everything so imported ids never collide with existing ones.
@@ -199,11 +240,20 @@ export function importJson(raw: string, merge: boolean, current: DashboardData):
     const task = normalizeTask(t);
     return { ...task, id: uid("t"), projectId: idMap[task.projectId] ?? task.projectId };
   });
+  const newUpdates = inU.map((u) => {
+    const update = normalizeUpdate(u);
+    return { ...update, id: uid("u"), projectId: idMap[update.projectId] ?? update.projectId };
+  });
 
   return {
     data: merge
-      ? { ...current, projects: [...current.projects, ...newProjects], tasks: [...current.tasks, ...newTasks] }
-      : { ...current, projects: newProjects, tasks: newTasks },
+      ? {
+          ...current,
+          projects: [...current.projects, ...newProjects],
+          tasks: [...current.tasks, ...newTasks],
+          updates: [...current.updates, ...newUpdates],
+        }
+      : { ...current, projects: newProjects, tasks: newTasks, updates: newUpdates },
     addedProjects: newProjects.length,
     addedTasks: newTasks.length,
   };
@@ -225,12 +275,13 @@ export function importCsv(raw: string, type: CsvType, merge: boolean, current: D
       description: r.description || r.desc || "",
       owner: r.owner || "",
       department: r.department || r.dept || "",
+      priority: normPriority(r.priority),
       color: colorFor(base + i),
     }));
     return {
       data: merge
         ? { ...current, projects: [...current.projects, ...imported] }
-        : { ...current, projects: imported, tasks: [] },
+        : { ...current, projects: imported, tasks: [], updates: [] },
       addedProjects: imported.length,
       addedTasks: 0,
     };
@@ -245,7 +296,7 @@ export function importCsv(raw: string, type: CsvType, merge: boolean, current: D
     if (!proj && projName) {
       proj = {
         id: uid("p"), name: projName, startDate: "", endDate: "",
-        description: "", owner: "", department: "", color: colorFor(projects.length),
+        description: "", owner: "", department: "", priority: "Medium", color: colorFor(projects.length),
       };
       projects.push(proj);
       addedProjects++;
@@ -279,12 +330,15 @@ export function importCsv(raw: string, type: CsvType, merge: boolean, current: D
 export function downloadJsonTemplate() {
   const tpl = {
     projects: [
-      { id: "p1", name: "ERP System Upgrade", startDate: "2025-01-01", endDate: "2025-12-31", description: "Upgrade internal ERP", owner: "Somchai K.", department: "Information Technology" },
+      { id: "p1", name: "ERP System Upgrade", startDate: "2025-01-01", endDate: "2025-12-31", description: "Upgrade internal ERP", owner: "Somchai K.", department: "Information Technology", priority: "High" },
     ],
     tasks: [
       { id: "t1", projectId: "p1", name: "Requirements Gathering", owner: "Somchai K.", dev: ["Chai P.", "Nattaya P."], phase: "Functional Requirement", startDate: "2025-01-01", endDate: "2025-02-28", status: "Done", priority: "High", progress: 100, notes: "" },
       { id: "t2", projectId: "p1", name: "System Design", owner: "Apinya W.", dev: ["Mongkol R."], phase: "Design Screen", startDate: "2025-03-01", endDate: "2025-04-30", status: "In Progress", priority: "High", progress: 50, notes: "" },
       { id: "t3", projectId: "p1", name: "Development", owner: "Chai P.", dev: ["Chai P.", "Mongkol R."], phase: "Development", startDate: "2025-05-01", endDate: "2025-09-30", status: "Not Start", priority: "Medium", progress: 0, notes: "" },
+    ],
+    updates: [
+      { id: "u1", projectId: "p1", updateDate: "2025-03-15", progress: 50, projectStatus: "In Progress", healthStatus: "On Track", achievement: "Requirements signed off.", issueRisk: "No outstanding issue", issueStatus: "Closed", nextAction: "Complete system design.", nextMilestone: "Design sign-off", nextMilestoneDate: "2025-04-30", remark: "", updatedBy: "Somchai K." },
     ],
   };
   downloadFile("isd_template.json", JSON.stringify(tpl, null, 2), "application/json");
@@ -298,9 +352,9 @@ const CSV_TEMPLATES: Record<CsvType, string> = {
     '"Development","Chai P.","Chai P.,Mongkol R.","Development",2025-05-01,2025-09-30,Plan,Medium,0,,ERP System Upgrade',
   ].join("\n"),
   projects: [
-    "name,startDate,endDate,description,owner,department",
-    "ERP System Upgrade,2025-01-01,2025-12-31,Upgrade internal ERP platform,Somchai K.,Information Technology",
-    "Website Redesign,2025-02-01,2025-06-30,Redesign corporate website,Apinya W.,Marketing",
+    "name,startDate,endDate,description,owner,department,priority",
+    "ERP System Upgrade,2025-01-01,2025-12-31,Upgrade internal ERP platform,Somchai K.,Information Technology,High",
+    "Website Redesign,2025-02-01,2025-06-30,Redesign corporate website,Apinya W.,Marketing,Medium",
   ].join("\n"),
 };
 
@@ -308,7 +362,7 @@ export function downloadCsvTemplate(type: CsvType) {
   downloadFile(`isd_template_${type}.csv`, CSV_TEMPLATES[type], "text/csv;charset=utf-8;");
 }
 
-export function exportData({ projects, tasks }: DashboardData) {
-  const payload = { projects, tasks, exportedAt: new Date().toISOString(), version: "2.0" };
+export function exportData({ projects, tasks, updates }: DashboardData) {
+  const payload = { projects, tasks, updates, exportedAt: new Date().toISOString(), version: "2.1" };
   downloadFile(`isd_backup_${todayISO()}.json`, JSON.stringify(payload, null, 2), "application/json");
 }

@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
+import Snackbar from "@mui/material/Snackbar";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import { updateData, useDashboardData } from "@/lib/store";
@@ -13,6 +15,7 @@ import Sidebar from "./Sidebar";
 import ImportDialog from "./dialogs/ImportDialog";
 import ProjectDialog from "./dialogs/ProjectDialog";
 import TaskDialog from "./dialogs/TaskDialog";
+import UpdateProjectDialog from "./dialogs/UpdateProjectDialog";
 import AllProjectsDashboard from "./views/AllProjectsDashboard";
 import ProjectDashboard from "./views/ProjectDashboard";
 import TasksView from "./views/TasksView";
@@ -46,6 +49,8 @@ function DashboardShell({ data }: { data: DashboardData }) {
   const [projectDialog, setProjectDialog] = useState<DialogState>(closedDialog);
   const [taskDialog, setTaskDialog] = useState<DialogState>(closedDialog);
   const [importDialog, setImportDialog] = useState<DialogState>(closedDialog);
+  const [updateDialog, setUpdateDialog] = useState<DialogState>(closedDialog);
+  const [toast, setToast] = useState<{ open: boolean; message: string }>({ open: false, message: "" });
 
   // Fall back to "All" if the selected project was deleted or replaced by an import.
   const activeProject = data.projects.find((p) => p.id === selectedId);
@@ -79,6 +84,10 @@ function DashboardShell({ data }: { data: DashboardData }) {
         open(setTaskDialog, id);
       },
       openImportDialog: () => open(setImportDialog),
+      openUpdateDialog: () => {
+        if (!isAll) open(setUpdateDialog, activeProjectId);
+      },
+      notify: (message) => setToast({ open: true, message }),
 
       saveProject: (input, id) => {
         if (id) {
@@ -95,6 +104,7 @@ function DashboardShell({ data }: { data: DashboardData }) {
           ...d,
           projects: d.projects.filter((p) => p.id !== id),
           tasks: d.tasks.filter((t) => t.projectId !== id),
+          updates: d.updates.filter((u) => u.projectId !== id),
         }));
       },
       saveTask: (input, id) => {
@@ -108,6 +118,18 @@ function DashboardShell({ data }: { data: DashboardData }) {
         if (!confirm("Delete this task?")) return;
         updateData((d) => ({ ...d, tasks: d.tasks.filter((t) => t.id !== id) }));
       },
+      saveProjectUpdate: (input) => {
+        if (isAll) return;
+        const update = { ...input, id: uid("u"), projectId: activeProjectId, createdAt: new Date().toISOString() };
+        updateData((d) => ({ ...d, updates: [...d.updates, update] }));
+        setToast({ open: true, message: "Project update saved successfully." });
+      },
+      deleteProjectUpdate: (id) => {
+        if (!confirm("Delete this project update from the history?")) return;
+        updateData((d) => ({ ...d, updates: d.updates.filter((u) => u.id !== id) }));
+      },
+      setIssueStatus: (updateId, issueStatus) =>
+        updateData((d) => ({ ...d, updates: d.updates.map((u) => (u.id === updateId ? { ...u, issueStatus } : u)) })),
       setDevList: (devList) => updateData((d) => ({ ...d, devList })),
       setDeptList: (deptList) => updateData((d) => ({ ...d, deptList })),
       replaceData: (next, resetSelection) => {
@@ -152,6 +174,24 @@ function DashboardShell({ data }: { data: DashboardData }) {
         taskId={taskDialog.id}
         onClose={() => setTaskDialog((d) => ({ ...d, open: false }))}
       />
+      {activeProject && (
+        <UpdateProjectDialog
+          key={`update-${updateDialog.key}`}
+          open={updateDialog.open && updateDialog.id === activeProjectId}
+          project={activeProject}
+          onClose={() => setUpdateDialog((d) => ({ ...d, open: false }))}
+        />
+      )}
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={3500}
+        onClose={() => setToast((t) => ({ ...t, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity="success" variant="filled" onClose={() => setToast((t) => ({ ...t, open: false }))} sx={{ color: "#fff" }}>
+          {toast.message}
+        </Alert>
+      </Snackbar>
       <ImportDialog
         key={`import-${importDialog.key}`}
         open={importDialog.open}

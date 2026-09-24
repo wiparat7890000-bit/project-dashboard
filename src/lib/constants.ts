@@ -1,4 +1,4 @@
-import type { Phase, Priority, Status } from "./types";
+import type { HealthStatus, Phase, Priority, ProjectStatus, Status } from "./types";
 
 export const DEV_LIST_DEFAULT = [
   "Apinya W.",
@@ -83,9 +83,27 @@ export const STATUS_EMOJI: Record<Status, string> = {
   Cancelled: "🟡",
 };
 
+export const PROJECT_STATUS_STYLE: Record<ProjectStatus, TagStyle & { bar: string }> = {
+  "Not Started": { bg: "#f1f5f9", color: "#64748b", bar: "#94a3b8" },
+  "In Progress": { bg: "#dbeafe", color: "#2563eb", bar: "#0ea5e9" },
+  "At Risk": { bg: "#ffedd5", color: "#c2410c", bar: "#f97316" },
+  Delayed: { bg: "#fee2e2", color: "#dc2626", bar: "#ef4444" },
+  Completed: { bg: "#dcfce7", color: "#16a34a", bar: "#22c55e" },
+  "On Hold": { bg: "#e2e8f0", color: "#475569", bar: "#64748b" },
+};
+
+export const HEALTH_STYLE: Record<HealthStatus, TagStyle & { dot: string; emoji: string }> = {
+  "On Track": { bg: "#dcfce7", color: "#16a34a", dot: "#22c55e", emoji: "🟢" },
+  "At Risk": { bg: "#fef3c7", color: "#b45309", dot: "#f59e0b", emoji: "🟡" },
+  Delayed: { bg: "#fee2e2", color: "#dc2626", dot: "#ef4444", emoji: "🔴" },
+};
+
+export const NO_ISSUE_TEXT = "No outstanding issue";
+
 export const STORAGE_KEYS = {
   projects: "isd_projects",
   tasks: "isd_tasks",
+  updates: "isd_project_updates",
   devList: "isd_dev_list",
   deptList: "isd_dept_list",
 } as const;

@@ -10,7 +10,7 @@ export default function ProjectHoverCard({ project: p, stats: s }: { project: Pr
     ["Total", s.total, "#f1f5f9"],
     ["Done", s.counts.Done, "#22c55e"],
     ["Active", s.counts["In Progress"], "#38bdf8"],
-    ["Overdue", s.overdue, s.overdue > 0 ? "#f87171" : "#64748b"],
+    ["Delayed", s.delayed, s.delayed > 0 ? "#f87171" : "#64748b"],
   ];
 
   return (

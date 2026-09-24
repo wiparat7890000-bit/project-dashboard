@@ -1,5 +1,16 @@
-import { COLORS } from "./constants";
-import { PHASES, STATUSES, type Phase, type Project, type ProjectStats, type Status, type Task } from "./types";
+import { COLORS, NO_ISSUE_TEXT } from "./constants";
+import {
+  PHASES,
+  STATUSES,
+  type HealthStatus,
+  type Phase,
+  type Project,
+  type ProjectStats,
+  type ProjectStatus,
+  type ProjectUpdate,
+  type Status,
+  type Task,
+} from "./types";
 
 const DAY_MS = 86_400_000;
 
@@ -14,12 +25,15 @@ export function colorFor(index: number) {
   return COLORS[index % COLORS.length];
 }
 
-export function isClosed(t: Task) {
-  return t.status === "Done" || t.status === "Cancelled";
+/** A task is delayed when its end date has passed and it is not at 100% (cancelled tasks are exempt). */
+export function isDelayed(t: Task, today = todayISO()) {
+  return !!t.endDate && t.endDate < today && t.progress < 100 && t.status !== "Cancelled";
 }
 
-export function isOverdue(t: Task, today = todayISO()) {
-  return !!t.endDate && t.endDate < today && !isClosed(t);
+/** Whole days between a task's end date and today (0 if not delayed). */
+export function daysDelayed(t: Task, today = todayISO()) {
+  if (!isDelayed(t, today)) return 0;
+  return Math.round((new Date(today).getTime() - new Date(t.endDate).getTime()) / DAY_MS);
 }
 
 export function daysUntil(date: string): number | null {
@@ -45,7 +59,8 @@ export function getProjectStats(project: Project, allTasks: Task[]): ProjectStat
     tasks,
     total: tasks.length,
     counts: countByStatus(tasks),
-    overdue: tasks.filter((t) => isOverdue(t, today)).length,
+    completed: tasks.filter((t) => t.progress >= 100).length,
+    delayed: tasks.filter((t) => isDelayed(t, today)).length,
     avg: avgProgress(tasks),
     daysLeft: daysUntil(project.endDate),
   };
@@ -75,6 +90,16 @@ export function formatDate(d?: string) {
   return `${dd}-${mm}-${dt.getUTCFullYear()}`;
 }
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** `2026-09-24` → `24 Sep 2026`. */
+export function formatLongDate(d?: string) {
+  if (!d) return "";
+  const dt = new Date(d);
+  if (Number.isNaN(dt.getTime())) return d;
+  return `${String(dt.getUTCDate()).padStart(2, "0")} ${MONTHS[dt.getUTCMonth()]} ${dt.getUTCFullYear()}`;
+}
+
 export function pct(count: number, total: number) {
   return total ? Math.round((count / total) * 100) : 0;
 }
@@ -100,4 +125,63 @@ export function groupByPhase(tasks: Task[]): [Phase | "", Task[]][] {
   for (const t of tasks) groups.set(t.phase, [...(groups.get(t.phase) ?? []), t]);
   const order: (Phase | "")[] = [...PHASES, ""];
   return order.filter((p) => groups.has(p)).map((p) => [p, groups.get(p)!]);
+}
+
+// ── Project status & updates ──────────────────────────────────────────────────
+
+/** Suggest a project status from its tasks. Never applied automatically. */
+export function suggestProjectStatus(tasks: Task[]): ProjectStatus {
+  if (tasks.length && tasks.every((t) => t.progress >= 100)) return "Completed";
+  if (tasks.some((t) => isDelayed(t))) return "Delayed";
+  if (tasks.some((t) => t.progress > 0 || t.status === "In Progress")) return "In Progress";
+  return "Not Started";
+}
+
+export function suggestHealth(tasks: Task[]): HealthStatus {
+  return tasks.some((t) => isDelayed(t)) ? "Delayed" : "On Track";
+}
+
+/** Updates for one project, newest first. */
+export function projectUpdates(updates: ProjectUpdate[], projectId: string) {
+  return updates
+    .filter((u) => u.projectId === projectId)
+    .sort((a, b) => b.updateDate.localeCompare(a.updateDate) || b.createdAt.localeCompare(a.createdAt));
+}
+
+/** Whether an Issue / Risk text describes an actual issue (not blank or "No outstanding issue"). */
+export function hasIssue(issueRisk: string) {
+  const text = issueRisk.trim().toLowerCase().replace(/\.$/, "");
+  return !!text && text !== NO_ISSUE_TEXT.toLowerCase() && text !== "-" && text !== "none";
+}
+
+export function isOpenIssue(u: ProjectUpdate) {
+  return hasIssue(u.issueRisk) && u.issueStatus === "Open";
+}
+
+export interface ProjectOverview {
+  stats: ProjectStats;
+  updates: ProjectUpdate[];
+  latest: ProjectUpdate | undefined;
+  status: ProjectStatus;
+  health: HealthStatus;
+  /** True when status/health come from task data because no update has been saved yet. */
+  isAuto: boolean;
+  openIssues: number;
+  lastUpdated: string;
+}
+
+export function getProjectOverview(project: Project, tasks: Task[], allUpdates: ProjectUpdate[]): ProjectOverview {
+  const stats = getProjectStats(project, tasks);
+  const updates = projectUpdates(allUpdates, project.id);
+  const latest = updates[0];
+  return {
+    stats,
+    updates,
+    latest,
+    status: latest?.projectStatus ?? suggestProjectStatus(stats.tasks),
+    health: latest?.healthStatus ?? suggestHealth(stats.tasks),
+    isAuto: !latest,
+    openIssues: updates.filter(isOpenIssue).length,
+    lastUpdated: latest?.updateDate ?? "",
+  };
 }

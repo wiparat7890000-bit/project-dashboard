@@ -2,7 +2,7 @@
 
 import { STATUS_STYLE } from "@/lib/constants";
 import { PHASES, STATUSES, type Phase } from "@/lib/types";
-import { firstName, formatDate, isOverdue, todayISO } from "@/lib/utils";
+import { firstName, formatDate, isDelayed, todayISO } from "@/lib/utils";
 import { useDashboard } from "../DashboardContext";
 import { PhaseBadge } from "../ui/Badges";
 import { Panel } from "../ui/Primitives";
@@ -75,7 +75,7 @@ export default function TimelineView() {
               const right = pos(t.endDate || maxDate);
               const width = Math.max(0.5, right - left);
               const color = STATUS_STYLE[t.status].bar;
-              const overdue = isOverdue(t, today);
+              const overdue = isDelayed(t, today);
               const done = t.status === "Done";
               const sub = isAll && proj ? proj.name : t.dev.map(firstName).join(", ") || t.owner;
 

@@ -10,7 +10,8 @@ import TextField from "@mui/material/TextField";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import ShuffleIcon from "@mui/icons-material/Shuffle";
-import { SWATCH_COLORS } from "@/lib/constants";
+import { PRIORITY_STYLE, SWATCH_COLORS } from "@/lib/constants";
+import { PRIORITIES, type Priority } from "@/lib/types";
 import { colorFor } from "@/lib/utils";
 import { useDashboard, type ProjectInput } from "../DashboardContext";
 import FormDialog, { FieldLabel, LinkAction } from "./FormDialog";
@@ -32,6 +33,7 @@ export default function ProjectDialog({ open, projectId, onClose }: Props) {
     description: existing?.description ?? "",
     owner: existing?.owner ?? "",
     department: existing?.department ?? "",
+    priority: existing?.priority ?? "Medium",
     color: existing?.color ?? colorFor(data.projects.length),
   }));
   const [error, setError] = useState("");
@@ -94,9 +96,21 @@ export default function ProjectDialog({ open, projectId, onClose }: Props) {
         <TextField fullWidth size="small" multiline minRows={2} placeholder="Brief project description..." value={form.description} onChange={(e) => set("description", e.target.value)} />
       </div>
 
-      <div>
-        <FieldLabel>Project Owner</FieldLabel>
-        <TextField fullWidth size="small" placeholder="e.g. Somchai K." value={form.owner} onChange={(e) => set("owner", e.target.value)} />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <FieldLabel>Project Owner</FieldLabel>
+          <TextField fullWidth size="small" placeholder="e.g. Somchai K." value={form.owner} onChange={(e) => set("owner", e.target.value)} />
+        </div>
+        <div>
+          <FieldLabel>Priority</FieldLabel>
+          <TextField select fullWidth size="small" value={form.priority} onChange={(e) => set("priority", e.target.value as Priority)}>
+            {PRIORITIES.map((p) => (
+              <MenuItem key={p} value={p}>
+                {PRIORITY_STYLE[p].emoji} {p}
+              </MenuItem>
+            ))}
+          </TextField>
+        </div>
       </div>
 
       <div>

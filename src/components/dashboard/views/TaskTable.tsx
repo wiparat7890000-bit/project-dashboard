@@ -1,5 +1,5 @@
 import type { Project, Task } from "@/lib/types";
-import { formatDate, isOverdue, taskProgressColor, todayISO } from "@/lib/utils";
+import { formatDate, isDelayed, taskProgressColor, todayISO } from "@/lib/utils";
 import { ColorDot, DevTags, PhaseBadge, PriorityBadge, StatusBadge } from "../ui/Badges";
 import { ProgressBar } from "../ui/Primitives";
 
@@ -44,7 +44,7 @@ export default function TaskTable({ tasks, projects, onRowClick, empty }: TaskTa
             </tr>
           )}
           {tasks.map((t) => {
-            const overdue = isOverdue(t, today);
+            const overdue = isDelayed(t, today);
             const proj = projects?.find((p) => p.id === t.projectId);
             return (
               <tr key={t.id} className="cursor-pointer hover:bg-slate-50" onClick={() => onRowClick(t)}>
