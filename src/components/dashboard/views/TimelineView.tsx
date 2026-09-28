@@ -92,7 +92,7 @@ export default function TimelineView() {
                 const width = Math.max(0.5, right - left);
                 const color = STATUS_STYLE[t.status].bar;
                 const overdue = isDelayed(t, today);
-                const done = t.status === "Done";
+                const done = t.status === "Completed";
                 const sub = isAll && proj ? proj.name : t.dev.map(firstName).join(", ") || t.owner;
 
                 return (

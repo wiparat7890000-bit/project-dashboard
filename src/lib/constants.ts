@@ -87,7 +87,7 @@ export const STATUS_STYLE: Record<Status, StatusStyle> = {
   "Not Start": { bg: "#f1f5f9", color: "#64748b", icon: "○", bar: "#94a3b8" },
   Plan: { bg: "#ede9fe", color: "#7c3aed", icon: "◈", bar: "#a78bfa" },
   "In Progress": { bg: "#dbeafe", color: "#2563eb", icon: "⟳", bar: "#0ea5e9" },
-  Done: { bg: "#dcfce7", color: "#16a34a", icon: "✓", bar: "#22c55e" },
+  Completed: { bg: "#dcfce7", color: "#16a34a", icon: "✓", bar: "#22c55e" },
   Cancelled: { bg: "#fef3c7", color: "#92400e", icon: "✕", bar: "#fbbf24" },
 };
 
@@ -101,7 +101,7 @@ export const STATUS_EMOJI: Record<Status, string> = {
   "Not Start": "⚪",
   Plan: "🟣",
   "In Progress": "🔵",
-  Done: "🟢",
+  Completed: "🟢",
   Cancelled: "🟡",
 };
 

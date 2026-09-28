@@ -220,18 +220,18 @@ export function getProjectOverview(project: Project, tasks: Task[], allUpdates: 
 // ── Project history (finished projects) ───────────────────────────────────────
 
 /**
- * A project is finished when it has at least one Done task and every task is Done
+ * A project is finished when it has at least one Completed task and every task is Completed
  * (Cancelled tasks don't block it). Derived from tasks, so reopening a task
  * brings the project back to the active list.
  */
 export function isProjectFinished(projectTasks: Task[]) {
-  return projectTasks.some((t) => t.status === "Done") && projectTasks.every((t) => t.status === "Done" || t.status === "Cancelled");
+  return projectTasks.some((t) => t.status === "Completed") && projectTasks.every((t) => t.status === "Completed" || t.status === "Cancelled");
 }
 
-/** Latest end date among Done tasks — used as the project's finish date. */
+/** Latest end date among Completed tasks — used as the project's finish date. */
 export function finishDate(projectTasks: Task[]) {
   return projectTasks
-    .filter((t) => t.status === "Done" && t.endDate)
+    .filter((t) => t.status === "Completed" && t.endDate)
     .map((t) => t.endDate)
     .sort()
     .at(-1) ?? "";

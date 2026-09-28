@@ -39,7 +39,7 @@ export default function AllProjectsDashboard() {
   const kpis: Kpi[] = [
     { label: "Active Projects", value: projects.length, icon: "🗂️", bg: "bg-indigo-50", border: "border-indigo-200" },
     { label: "Total Tasks", value: tasks.length, icon: "📋", bg: "bg-blue-50", border: "border-blue-200" },
-    { label: "Completed", value: counts.Done, icon: "✅", bg: "bg-green-50", border: "border-green-200" },
+    { label: "Completed", value: counts.Completed, icon: "✅", bg: "bg-green-50", border: "border-green-200" },
     { label: "In Progress", value: counts["In Progress"], icon: "⚙️", bg: "bg-sky-50", border: "border-sky-200" },
     { label: "Delayed Tasks", value: delayed, icon: "⚠️", bg: "bg-red-50", border: "border-red-200" },
   ];
@@ -90,7 +90,7 @@ export default function AllProjectsDashboard() {
                   </div>
                   <div className="flex items-center gap-3 text-xs">
                     <span className="text-slate-400">
-                      {s.counts.Done}/{s.total}
+                      {s.counts.Completed}/{s.total}
                     </span>
                     <DaysLeft days={s.daysLeft} />
                     <span className="font-bold text-slate-700">{s.avg}%</span>
@@ -147,7 +147,7 @@ export default function AllProjectsDashboard() {
             <div className="flex justify-between text-xs">
               <div className="flex gap-3 text-slate-500">
                 <span>
-                  <b className="text-slate-700">{s.counts.Done}</b> Done
+                  <b className="text-slate-700">{s.counts.Completed}</b> Completed
                 </span>
                 <span>
                   <b className="text-slate-700">{s.counts["In Progress"]}</b> Active
@@ -179,7 +179,7 @@ export default function AllProjectsDashboard() {
             <div className="text-sm font-semibold text-slate-700">All Tasks Summary</div>
           </div>
           <div className="flex gap-2 text-xs font-semibold">
-            <span className="rounded-full bg-green-100 px-2 py-1 text-green-700">✓ {counts.Done} Done</span>
+            <span className="rounded-full bg-green-100 px-2 py-1 text-green-700">✓ {counts.Completed} Completed</span>
             <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700">⚙ {counts["In Progress"]} Active</span>
             {delayed > 0 && <span className="rounded-full bg-red-100 px-2 py-1 text-red-600">⚠ {delayed} Delayed</span>}
           </div>

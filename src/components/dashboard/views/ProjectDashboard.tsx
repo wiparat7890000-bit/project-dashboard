@@ -146,7 +146,7 @@ function ProjectHeader({ project, overview }: { project: Project; overview: Proj
           <div className="mb-1 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-widest text-white/60">
             Project Dashboard
             {inHistory && (
-              <Tooltip title="All tasks are Done, so this project is listed in Project History. Reopen a task to make it active again.">
+              <Tooltip title="All tasks are Completed, so this project is listed in Project History. Reopen a task to make it active again.">
                 <button
                   type="button"
                   onClick={() => setTab("history")}

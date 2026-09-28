@@ -11,7 +11,7 @@ export interface DashboardContextValue {
   data: DashboardData;
   /** Projects still in progress (shown in the sidebar and overview). */
   activeProjects: Project[];
-  /** Projects whose tasks are all Done — listed in the Project History tab. */
+  /** Projects whose tasks are all Completed — listed in the Project History tab. */
   historyProjects: Project[];
   /** Tasks of active projects only. */
   activeTasks: Task[];

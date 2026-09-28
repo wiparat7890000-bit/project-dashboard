@@ -53,7 +53,7 @@ export default function TaskDialog({ open, taskId, onClose }: Props) {
         name,
         owner: form.owner.trim(),
         notes: form.notes.trim(),
-        progress: form.status === "Done" ? 100 : form.progress,
+        progress: form.status === "Completed" ? 100 : form.progress,
       },
       taskId,
     );
@@ -141,10 +141,10 @@ export default function TaskDialog({ open, taskId, onClose }: Props) {
       </div>
 
       <div>
-        <FieldLabel>Progress: {form.status === "Done" ? 100 : form.progress}%</FieldLabel>
+        <FieldLabel>Progress: {form.status === "Completed" ? 100 : form.progress}%</FieldLabel>
         <Slider
-          value={form.status === "Done" ? 100 : form.progress}
-          disabled={form.status === "Done"}
+          value={form.status === "Completed" ? 100 : form.progress}
+          disabled={form.status === "Completed"}
           onChange={(_, v) => set("progress", v as number)}
           step={5}
           marks={[{ value: 0, label: "0%" }, { value: 50, label: "50%" }, { value: 100, label: "100%" }]}

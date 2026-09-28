@@ -26,9 +26,9 @@ const STATUS_ALIASES: Record<string, Status> = {
   plan: "Plan",
   inprogress: "In Progress",
   inprog: "In Progress",
-  done: "Done",
-  complete: "Done",
-  completed: "Done",
+  done: "Completed",
+  complete: "Completed",
+  completed: "Completed",
   cancelled: "Cancelled",
   canceled: "Cancelled",
 };
@@ -128,7 +128,7 @@ export function normalizeTask(input: unknown, phaseList: string[] = []): Task {
     endDate: normDate(t.endDate),
     status,
     priority: normPriority(t.priority),
-    progress: status === "Done" ? 100 : clampProgress(t.progress),
+    progress: status === "Completed" ? 100 : clampProgress(t.progress),
     notes: str(t.notes),
   };
 }
@@ -327,7 +327,7 @@ function importCsvData(raw: string, type: CsvType, merge: boolean, current: Dash
       endDate: normDate(r.enddate || r.end || r.duedate || r.due),
       status,
       priority: normPriority(r.priority),
-      progress: status === "Done" ? 100 : clampProgress(r.progress),
+      progress: status === "Completed" ? 100 : clampProgress(r.progress),
       notes: r.notes || r.note || r.remark || "",
     };
   });
@@ -347,7 +347,7 @@ export function downloadJsonTemplate() {
       { id: "p1", name: "ERP System Upgrade", startDate: "2025-01-01", endDate: "2025-12-31", description: "Upgrade internal ERP", owner: "Somchai K.", department: "Information Technology", priority: "High" },
     ],
     tasks: [
-      { id: "t1", projectId: "p1", name: "Requirements Gathering", owner: "Somchai K.", dev: ["Chai P.", "Nattaya P."], phase: "Functional Requirement", startDate: "2025-01-01", endDate: "2025-02-28", status: "Done", priority: "High", progress: 100, notes: "" },
+      { id: "t1", projectId: "p1", name: "Requirements Gathering", owner: "Somchai K.", dev: ["Chai P.", "Nattaya P."], phase: "Functional Requirement", startDate: "2025-01-01", endDate: "2025-02-28", status: "Completed", priority: "High", progress: 100, notes: "" },
       { id: "t2", projectId: "p1", name: "System Design", owner: "Apinya W.", dev: ["Mongkol R."], phase: "Design Screen", startDate: "2025-03-01", endDate: "2025-04-30", status: "In Progress", priority: "High", progress: 50, notes: "" },
       { id: "t3", projectId: "p1", name: "Development", owner: "Chai P.", dev: ["Chai P.", "Mongkol R."], phase: "Development", startDate: "2025-05-01", endDate: "2025-09-30", status: "Not Start", priority: "Medium", progress: 0, notes: "" },
     ],
@@ -361,7 +361,7 @@ export function downloadJsonTemplate() {
 const CSV_TEMPLATES: Record<CsvType, string> = {
   tasks: [
     "name,owner,dev,phase,startDate,endDate,status,priority,progress,notes,projectName",
-    '"Requirements Gathering","Somchai K.","Chai P.,Nattaya P.","Functional Requirement",2025-01-01,2025-02-28,Done,High,100,,ERP System Upgrade',
+    '"Requirements Gathering","Somchai K.","Chai P.,Nattaya P.","Functional Requirement",2025-01-01,2025-02-28,Completed,High,100,,ERP System Upgrade',
     '"System Design","Apinya W.","Mongkol R.","Design Screen",2025-03-01,2025-04-30,In Progress,High,50,,ERP System Upgrade',
     '"Development","Chai P.","Chai P.,Mongkol R.","Development",2025-05-01,2025-09-30,Plan,Medium,0,,ERP System Upgrade',
   ].join("\n"),

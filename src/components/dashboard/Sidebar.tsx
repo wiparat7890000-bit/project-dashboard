@@ -138,7 +138,7 @@ export default function Sidebar() {
         </button>
 
         <div className="mt-4 border-t border-slate-800 pt-4">
-          <Tooltip title="Projects whose tasks are all Done" placement="right">
+          <Tooltip title="Projects whose tasks are all Completed" placement="right">
             <button
               type="button"
               onClick={() => setTab("history")}

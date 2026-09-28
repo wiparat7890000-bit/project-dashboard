@@ -62,15 +62,15 @@ export default function ProjectHistoryView() {
           : b.finished.localeCompare(a.finished),
     );
 
-  const delivered = rows.reduce((n, r) => n + r.overview.stats.counts.Done, 0);
+  const delivered = rows.reduce((n, r) => n + r.overview.stats.counts.Completed, 0);
   const scheduled = rows.filter((r) => r.lateBy != null);
   const onTime = scheduled.filter((r) => r.lateBy! <= 0).length;
   const durations = rows.map((r) => r.durationDays).filter((d): d is number => d != null);
   const avgDuration = durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : null;
 
   const kpis: Kpi[] = [
-    { label: "Finished Projects", value: rows.length, icon: "📦", bg: "bg-indigo-50", border: "border-indigo-200", hint: "Projects whose tasks are all Done" },
-    { label: "Tasks Delivered", value: delivered, icon: "✅", bg: "bg-green-50", border: "border-green-200", hint: "Done tasks across finished projects" },
+    { label: "Finished Projects", value: rows.length, icon: "📦", bg: "bg-indigo-50", border: "border-indigo-200", hint: "Projects whose tasks are all Completed" },
+    { label: "Tasks Delivered", value: delivered, icon: "✅", bg: "bg-green-50", border: "border-green-200", hint: "Completed tasks across finished projects" },
     {
       label: "Finished On Time",
       value: (
@@ -81,7 +81,7 @@ export default function ProjectHistoryView() {
       icon: "🎯",
       bg: "bg-sky-50",
       border: "border-sky-200",
-      hint: "Last Done task ended on or before the project's target end date",
+      hint: "Last Completed task ended on or before the project's target end date",
     },
     {
       label: "Avg. Duration",
@@ -89,7 +89,7 @@ export default function ProjectHistoryView() {
       icon: "⏱️",
       bg: "bg-amber-50",
       border: "border-amber-200",
-      hint: "Average days from project start to its last Done task",
+      hint: "Average days from project start to its last Completed task",
     },
   ];
 
@@ -100,14 +100,14 @@ export default function ProjectHistoryView() {
         <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">{rows.length} Finished</span>
       </div>
       <p className="mb-5 ml-4 text-sm text-slate-500">
-        Projects move here automatically when all their tasks are Done. Reopen a task and the project returns to the active list.
+        Projects move here automatically when all their tasks are Completed. Reopen a task and the project returns to the active list.
       </p>
 
       {!rows.length ? (
         <Panel className="py-16 text-center text-slate-400">
           <div className="mb-3 text-5xl">📦</div>
           <div className="text-lg font-medium">No finished projects yet</div>
-          <div className="mt-1 text-sm">When every task in a project is Done, it will appear here.</div>
+          <div className="mt-1 text-sm">When every task in a project is Completed, it will appear here.</div>
         </Panel>
       ) : (
         <>
@@ -225,7 +225,7 @@ function HistoryTableRow({ row, onOpen }: { row: HistoryRow; onOpen: () => void 
       <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-500">{formatDate(p.startDate) || "—"}</td>
       <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-500">{formatDate(p.endDate) || "—"}</td>
       <td className="whitespace-nowrap px-4 py-3 text-xs font-semibold text-slate-700">
-        <Tooltip title="End date of the last Done task">
+        <Tooltip title="End date of the last Completed task">
           <span>{formatDate(finished) || "—"}</span>
         </Tooltip>
       </td>
@@ -245,9 +245,9 @@ function HistoryTableRow({ row, onOpen }: { row: HistoryRow; onOpen: () => void 
         )}
       </td>
       <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-600">
-        <Tooltip title={cancelled ? `${stats.counts.Done} Done, ${cancelled} Cancelled` : `${stats.counts.Done} Done`}>
+        <Tooltip title={cancelled ? `${stats.counts.Completed} Completed, ${cancelled} Cancelled` : `${stats.counts.Completed} Completed`}>
           <span>
-            <b className="text-slate-800">{stats.counts.Done}</b> done{cancelled > 0 && <span className="text-slate-400"> · {cancelled} cancelled</span>}
+            <b className="text-slate-800">{stats.counts.Completed}</b> completed{cancelled > 0 && <span className="text-slate-400"> · {cancelled} cancelled</span>}
           </span>
         </Tooltip>
       </td>

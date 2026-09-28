@@ -8,7 +8,7 @@ import { DaysLeft, ProgressBar, StackedBar } from "./ui/Primitives";
 export default function ProjectHoverCard({ project: p, stats: s }: { project: Project; stats: ProjectStats }) {
   const tiles: [string, number, string][] = [
     ["Total", s.total, "#f1f5f9"],
-    ["Done", s.counts.Done, "#22c55e"],
+    ["Completed", s.counts.Completed, "#22c55e"],
     ["Active", s.counts["In Progress"], "#38bdf8"],
     ["Delayed", s.delayed, s.delayed > 0 ? "#f87171" : "#64748b"],
   ];
