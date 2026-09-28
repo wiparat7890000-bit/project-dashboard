@@ -1,16 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
 import Snackbar from "@mui/material/Snackbar";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
+import { buildPath, isModifiedClick, parsePath, TAB_LABEL } from "@/lib/routes";
 import { updateData, useDashboardData } from "@/lib/store";
 import { ALL_PROJECTS, type DashboardData, type ViewTab } from "@/lib/types";
 import { splitProjects, uid } from "@/lib/utils";
 import { DashboardContext, type DashboardContextValue } from "./DashboardContext";
 import Header from "./Header";
+import PathBar from "./PathBar";
 import Sidebar from "./Sidebar";
 import ImportDialog from "./dialogs/ImportDialog";
 import ProjectDialog from "./dialogs/ProjectDialog";
@@ -28,6 +31,7 @@ export default function Dashboard() {
     // Server render / first paint: data lives in localStorage, so wait for the client.
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100">
+        <title>Project Dashboard | ISD</title>
         <CircularProgress />
       </div>
     );
@@ -43,9 +47,26 @@ interface DialogState {
 }
 const closedDialog: DialogState = { open: false, id: null, key: 0 };
 
+/**
+ * Change the URL without a page transition. Next.js syncs usePathname with the
+ * native History API, so the dashboard re-renders for the new path while keeping
+ * its in-memory state (present mode, filters, pagers).
+ */
+function go(href: string, replace = false) {
+  if (href === window.location.pathname) return;
+  if (replace) window.history.replaceState(null, "", href);
+  else window.history.pushState(null, "", href);
+}
+
 function DashboardShell({ data }: { data: DashboardData }) {
-  const [selectedId, setSelectedId] = useState<string>(ALL_PROJECTS);
-  const [tab, setTab] = useState<ViewTab>("dashboard");
+  const pathname = usePathname();
+  const route = parsePath(pathname);
+  const tab: ViewTab = route?.tab ?? "dashboard";
+  // Project History (/history) has no project in its path; remember the project
+  // the user came from so the other tabs return to it.
+  const [contextProjectId, setContextProjectId] = useState(route?.projectId ?? ALL_PROJECTS);
+  if (route && route.tab !== "history" && route.projectId !== contextProjectId) setContextProjectId(route.projectId);
+  const selectedId = route && route.tab !== "history" ? route.projectId : contextProjectId;
   const [presentMode, setPresentMode] = useState(false);
   const [projectDialog, setProjectDialog] = useState<DialogState>(closedDialog);
   const [taskDialog, setTaskDialog] = useState<DialogState>(closedDialog);
@@ -59,6 +80,17 @@ function DashboardShell({ data }: { data: DashboardData }) {
   const isAll = activeProjectId === ALL_PROJECTS;
   const split = useMemo(() => splitProjects(data.projects, data.tasks), [data.projects, data.tasks]);
 
+  // Unknown paths, or a project that no longer exists (deleted / replaced by an import),
+  // fall back to the matching all-projects page.
+  const canonical = buildPath(activeProjectId, tab);
+  const pathIsStale = !route || (route.tab !== "history" && route.projectId !== activeProjectId);
+  useEffect(() => {
+    if (pathIsStale) go(canonical, true);
+  }, [pathIsStale, canonical]);
+
+  // Browser tab title follows the current page (rendered as <title>, which React hoists into <head>).
+  const pageTitle = `${TAB_LABEL[tab]}${tab === "history" ? "" : activeProject ? ` · ${activeProject.name}` : " · All Projects"} | Project Dashboard`;
+
   const value = useMemo<DashboardContextValue>(() => {
     const open = (set: typeof setProjectDialog, id?: string) => set((d) => ({ open: true, id: id ?? null, key: d.key + 1 }));
 
@@ -71,14 +103,12 @@ function DashboardShell({ data }: { data: DashboardData }) {
       tab,
       presentMode,
 
-      selectProject: (id) => {
-        setSelectedId(id);
-        setTab("dashboard");
-      },
-      setTab,
+      navigate: (href) => go(href),
+      selectProject: (id) => go(buildPath(id, "dashboard")),
+      setTab: (next) => go(buildPath(activeProjectId, next)),
       togglePresentMode: () => {
         setPresentMode((p) => !p);
-        setTab("dashboard");
+        go(buildPath(activeProjectId, "dashboard"));
       },
 
       openProjectDialog: (id) => open(setProjectDialog, id),
@@ -98,7 +128,7 @@ function DashboardShell({ data }: { data: DashboardData }) {
         } else {
           const newId = uid("p");
           updateData((d) => ({ ...d, projects: [...d.projects, { id: newId, ...input }] }));
-          setSelectedId(newId);
+          go(buildPath(newId, "dashboard"));
         }
       },
       deleteProject: (id) => {
@@ -157,25 +187,42 @@ function DashboardShell({ data }: { data: DashboardData }) {
       },
       replaceData: (next, resetSelection) => {
         updateData(() => next);
-        if (resetSelection) setSelectedId(ALL_PROJECTS);
+        if (resetSelection) go(buildPath(ALL_PROJECTS, tab === "history" ? "dashboard" : tab));
       },
     };
-  }, [data, split, activeProjectId, activeProject, isAll, tab, presentMode]);
+    // State setters are stable; they're listed so the React Compiler can verify the memo.
+  }, [data, split, activeProjectId, activeProject, isAll, tab, presentMode, setPresentMode, setProjectDialog, setTaskDialog, setImportDialog, setUpdateDialog, setToast]);
+
+  /** Tabs are real links, so Ctrl/⌘/middle-click opens a view in a new browser tab. */
+  const tabLink = (view: ViewTab) => {
+    const href = buildPath(activeProjectId, view);
+    return {
+      value: view,
+      component: "a" as const,
+      href,
+      onClick: (e: React.MouseEvent) => {
+        if (isModifiedClick(e)) return;
+        e.preventDefault();
+        go(href);
+      },
+    };
+  };
 
   return (
     <DashboardContext.Provider value={value}>
+      <title>{pageTitle}</title>
       <div className="flex min-h-screen flex-col bg-slate-100">
         <Header />
         <div className="flex flex-1 overflow-hidden">
           {!presentMode && <Sidebar />}
           <main className="min-w-0 flex-1 overflow-auto">
             <div className="border-b border-slate-200 bg-white px-6 shadow-sm">
-              <Tabs value={tab} onChange={(_, v: ViewTab) => setTab(v)} variant="scrollable">
-                <Tab value="dashboard" label="📊 Dashboard" />
-                <Tab value="tasks" label="📋 Tasks" />
-                <Tab value="timeline" label="📅 Timeline" />
+              <Tabs value={tab} variant="scrollable" aria-label="Views">
+                <Tab {...tabLink("dashboard")} label="📊 Dashboard" />
+                <Tab {...tabLink("tasks")} label="📋 Tasks" />
+                <Tab {...tabLink("timeline")} label="📅 Timeline" />
                 <Tab
-                  value="history"
+                  {...tabLink("history")}
                   label={
                     <span className="flex items-center gap-2">
                       📦 Project History
@@ -187,6 +234,7 @@ function DashboardShell({ data }: { data: DashboardData }) {
                 />
               </Tabs>
             </div>
+            <PathBar />
             <div className="p-6">
               {tab === "dashboard" && (activeProject ? <ProjectDashboard project={activeProject} /> : <AllProjectsDashboard />)}
               {tab === "tasks" && <TasksView />}

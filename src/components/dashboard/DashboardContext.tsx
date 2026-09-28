@@ -22,6 +22,8 @@ export interface DashboardContextValue {
   tab: ViewTab;
   presentMode: boolean;
 
+  /** Go to a URL path inside the app (updates the address bar and history). */
+  navigate: (href: string) => void;
   selectProject: (id: string) => void;
   setTab: (tab: ViewTab) => void;
   togglePresentMode: () => void;

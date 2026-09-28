@@ -16,8 +16,8 @@ const openSans = Open_Sans({
   subsets: ["latin"],
 });
 
+// No static title: the dashboard renders a <title> for the current path (e.g. "Tasks · Website Redesign").
 export const metadata: Metadata = {
-  title: "Project Dashboard | ISD",
   description: "Information System Division — project and task status dashboard",
 };
 
