@@ -25,16 +25,29 @@ export function usePagination<T>(items: T[], pageSize: number) {
 type PagerProps = Pick<ReturnType<typeof usePagination>, "page" | "pageCount" | "setPage" | "from" | "to" | "total"> & {
   /** What is being paged, for labels, e.g. "projects". */
   noun: string;
+  /** Compact single-row layout for section headers ("1–6 of 9" beside the buttons). */
+  compact?: boolean;
   className?: string;
 };
 
 /** Prev / page dots / Next. Renders nothing when everything fits on one page. */
-export function Pager({ page, pageCount, setPage, from, to, total, noun, className = "" }: PagerProps) {
+export function Pager({ page, pageCount, setPage, from, to, total, noun, compact = false, className = "" }: PagerProps) {
   if (pageCount <= 1) return null;
   return (
-    <nav aria-label={`${noun} pages`} className={`flex flex-wrap items-center justify-between gap-3 ${className}`}>
+    <nav
+      aria-label={`${noun} pages`}
+      className={`flex flex-wrap items-center gap-3 ${compact ? "justify-end" : "justify-between"} ${className}`}
+    >
       <span className="text-xs text-slate-500">
-        Showing <b className="text-slate-700">{from}–{to}</b> of <b className="text-slate-700">{total}</b> {noun}
+        {compact ? (
+          <>
+            <b className="text-slate-700">{from}–{to}</b> of <b className="text-slate-700">{total}</b>
+          </>
+        ) : (
+          <>
+            Showing <b className="text-slate-700">{from}–{to}</b> of <b className="text-slate-700">{total}</b> {noun}
+          </>
+        )}
       </span>
       <div className="flex items-center gap-2">
         <Button

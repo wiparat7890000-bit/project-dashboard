@@ -101,16 +101,17 @@ export default function AllProjectsDashboard() {
             ))}
             {!projects.length && <div className="py-4 text-center text-sm text-slate-400">No projects yet</div>}
           </div>
-          <Pager {...progressPages} noun="projects" className="mt-auto border-t border-slate-100 pt-4" />
+          <Pager {...progressPages} noun="projects" className="mt-4 border-t border-slate-100 pt-4" />
         </Panel>
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <SectionHeading as="h3" accent="bg-indigo-500">
           Project Cards
         </SectionHeading>
+        <Pager {...cardPages} noun="projects" compact />
       </div>
-      <div key={cardPages.page} className={`${cardPages.pageCount > 1 ? "mb-4" : "mb-6"} grid animate-slide-in grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3`}>
+      <div key={cardPages.page} className="mb-6 grid animate-slide-in grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {cardPages.pageItems.map(({ project: p, stats: s, overview }) => (
           <Panel
             key={p.id}
@@ -170,7 +171,6 @@ export default function AllProjectsDashboard() {
           </div>
         )}
       </div>
-      <Pager {...cardPages} noun="projects" className="mb-6" />
 
       <Panel className="overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-6 py-4">
