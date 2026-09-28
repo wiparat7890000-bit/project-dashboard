@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
 import Snackbar from "@mui/material/Snackbar";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
-import { buildPath, isModifiedClick, parsePath, TAB_LABEL } from "@/lib/routes";
+import { buildPath, isModifiedClick, parsePath, projectSlugs, resolveProjectKey, samePath, TAB_LABEL } from "@/lib/routes";
 import { updateData, useDashboardData } from "@/lib/store";
 import { ALL_PROJECTS, type DashboardData, type ViewTab } from "@/lib/types";
 import { splitProjects, uid } from "@/lib/utils";
@@ -53,7 +53,7 @@ const closedDialog: DialogState = { open: false, id: null, key: 0 };
  * its in-memory state (present mode, filters, pagers).
  */
 function go(href: string, replace = false) {
-  if (href === window.location.pathname) return;
+  if (samePath(href, window.location.pathname)) return;
   if (replace) window.history.replaceState(null, "", href);
   else window.history.pushState(null, "", href);
 }
@@ -62,11 +62,26 @@ function DashboardShell({ data }: { data: DashboardData }) {
   const pathname = usePathname();
   const route = parsePath(pathname);
   const tab: ViewTab = route?.tab ?? "dashboard";
-  // Project History (/history) has no project in its path; remember the project
-  // the user came from so the other tabs return to it.
-  const [contextProjectId, setContextProjectId] = useState(route?.projectId ?? ALL_PROJECTS);
-  if (route && route.tab !== "history" && route.projectId !== contextProjectId) setContextProjectId(route.projectId);
-  const selectedId = route && route.tab !== "history" ? route.projectId : contextProjectId;
+
+  // Readable project slugs ("website-redesign") for URLs; old id links still resolve.
+  const slugs = useMemo(() => projectSlugs(data.projects), [data.projects]);
+  const pathFor = useCallback(
+    (projectId: string, view: ViewTab) => buildPath(projectId === ALL_PROJECTS ? null : (slugs.get(projectId) ?? null), view),
+    [slugs],
+  );
+  // Slugs projects had before a rename this session, so their old URLs still resolve
+  // (and get rewritten to the new slug) instead of falling back to All Projects.
+  const [slugAliases, setSlugAliases] = useState<Record<string, string>>({});
+  const routeProjectId =
+    !route || route.projectKey === ALL_PROJECTS
+      ? ALL_PROJECTS
+      : (resolveProjectKey(route.projectKey, data.projects, slugs, slugAliases)?.id ?? ALL_PROJECTS);
+
+  // Project History has no project in its path; remember the project the user
+  // came from so the other tabs return to it.
+  const [contextProjectId, setContextProjectId] = useState(routeProjectId);
+  if (route && route.tab !== "history" && routeProjectId !== contextProjectId) setContextProjectId(routeProjectId);
+  const selectedId = route && route.tab !== "history" ? routeProjectId : contextProjectId;
   const [presentMode, setPresentMode] = useState(false);
   const [projectDialog, setProjectDialog] = useState<DialogState>(closedDialog);
   const [taskDialog, setTaskDialog] = useState<DialogState>(closedDialog);
@@ -80,10 +95,11 @@ function DashboardShell({ data }: { data: DashboardData }) {
   const isAll = activeProjectId === ALL_PROJECTS;
   const split = useMemo(() => splitProjects(data.projects, data.tasks), [data.projects, data.tasks]);
 
-  // Unknown paths, or a project that no longer exists (deleted / replaced by an import),
-  // fall back to the matching all-projects page.
-  const canonical = buildPath(activeProjectId, tab);
-  const pathIsStale = !route || (route.tab !== "history" && route.projectId !== activeProjectId);
+  // Keep the address bar on the canonical path: old id links and /history are
+  // rewritten to readable paths, and unknown paths or deleted projects fall back
+  // to the matching all-projects page.
+  const canonical = pathFor(activeProjectId, tab);
+  const pathIsStale = !samePath(pathname, canonical);
   useEffect(() => {
     if (pathIsStale) go(canonical, true);
   }, [pathIsStale, canonical]);
@@ -104,11 +120,12 @@ function DashboardShell({ data }: { data: DashboardData }) {
       presentMode,
 
       navigate: (href) => go(href),
-      selectProject: (id) => go(buildPath(id, "dashboard")),
-      setTab: (next) => go(buildPath(activeProjectId, next)),
+      pathFor,
+      selectProject: (id) => go(pathFor(id, "dashboard")),
+      setTab: (next) => go(pathFor(activeProjectId, next)),
       togglePresentMode: () => {
         setPresentMode((p) => !p);
-        go(buildPath(activeProjectId, "dashboard"));
+        go(pathFor(activeProjectId, "dashboard"));
       },
 
       openProjectDialog: (id) => open(setProjectDialog, id),
@@ -124,11 +141,16 @@ function DashboardShell({ data }: { data: DashboardData }) {
 
       saveProject: (input, id) => {
         if (id) {
+          // A rename changes the slug; remember the old one so the current URL keeps
+          // resolving and the canonical-path effect moves the address bar to the new slug.
+          const oldSlug = slugs.get(id);
+          if (oldSlug) setSlugAliases((a) => ({ ...a, [oldSlug]: id }));
           updateData((d) => ({ ...d, projects: d.projects.map((p) => (p.id === id ? { ...p, ...input } : p)) }));
         } else {
           const newId = uid("p");
+          const projects = [...data.projects, { id: newId, ...input }];
           updateData((d) => ({ ...d, projects: [...d.projects, { id: newId, ...input }] }));
-          go(buildPath(newId, "dashboard"));
+          go(buildPath(projectSlugs(projects).get(newId) ?? null, "dashboard"));
         }
       },
       deleteProject: (id) => {
@@ -187,15 +209,15 @@ function DashboardShell({ data }: { data: DashboardData }) {
       },
       replaceData: (next, resetSelection) => {
         updateData(() => next);
-        if (resetSelection) go(buildPath(ALL_PROJECTS, tab === "history" ? "dashboard" : tab));
+        if (resetSelection) go(buildPath(null, tab === "history" ? "dashboard" : tab));
       },
     };
     // State setters are stable; they're listed so the React Compiler can verify the memo.
-  }, [data, split, activeProjectId, activeProject, isAll, tab, presentMode, setPresentMode, setProjectDialog, setTaskDialog, setImportDialog, setUpdateDialog, setToast]);
+  }, [data, split, slugs, pathFor, setSlugAliases, activeProjectId, activeProject, isAll, tab, presentMode, setPresentMode, setProjectDialog, setTaskDialog, setImportDialog, setUpdateDialog, setToast]);
 
   /** Tabs are real links, so Ctrl/⌘/middle-click opens a view in a new browser tab. */
   const tabLink = (view: ViewTab) => {
-    const href = buildPath(activeProjectId, view);
+    const href = pathFor(activeProjectId, view);
     return {
       value: view,
       component: "a" as const,

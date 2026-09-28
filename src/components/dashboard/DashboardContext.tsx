@@ -24,6 +24,8 @@ export interface DashboardContextValue {
 
   /** Go to a URL path inside the app (updates the address bar and history). */
   navigate: (href: string) => void;
+  /** URL path for a project (or ALL_PROJECTS) and view, using readable slugs. */
+  pathFor: (projectId: string, view: ViewTab) => string;
   selectProject: (id: string) => void;
   setTab: (tab: ViewTab) => void;
   togglePresentMode: () => void;

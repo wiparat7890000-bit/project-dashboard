@@ -8,7 +8,7 @@ import CheckIcon from "@mui/icons-material/Check";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import LinkIcon from "@mui/icons-material/Link";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-import { buildPath, isModifiedClick, TAB_LABEL } from "@/lib/routes";
+import { isModifiedClick, TAB_LABEL } from "@/lib/routes";
 import { ALL_PROJECTS } from "@/lib/types";
 import { useDashboard } from "./DashboardContext";
 
@@ -19,7 +19,7 @@ interface Crumb {
 
 /** Breadcrumb trail for the current view, plus its URL path with a copy-link button. */
 export default function PathBar() {
-  const { tab, activeProject, isInHistory, navigate } = useDashboard();
+  const { tab, activeProject, isInHistory, navigate, pathFor } = useDashboard();
   const [copied, setCopied] = useState(false);
 
   const crumbs: Crumb[] = [
@@ -36,15 +36,17 @@ export default function PathBar() {
     crumbs.push({ label: TAB_LABEL.history });
   } else if (activeProject) {
     const finished = isInHistory(activeProject.id);
-    crumbs.push(finished ? { label: TAB_LABEL.history, href: "/history" } : { label: "Projects", href: "/" });
-    crumbs.push({ label: activeProject.name, href: buildPath(activeProject.id, "dashboard") });
+    crumbs.push(finished ? { label: TAB_LABEL.history, href: pathFor(ALL_PROJECTS, "history") } : { label: "Projects", href: "/" });
+    crumbs.push({ label: activeProject.name, href: pathFor(activeProject.id, "dashboard") });
     crumbs.push({ label: TAB_LABEL[tab] });
   } else {
     crumbs.push({ label: "All Projects", href: "/" });
     crumbs.push({ label: TAB_LABEL[tab] });
   }
 
-  const path = buildPath(activeProject?.id ?? ALL_PROJECTS, tab);
+  // Shown decoded so Thai slugs stay readable; the copied link uses the encoded form.
+  const path = pathFor(activeProject?.id ?? ALL_PROJECTS, tab);
+  const displayPath = decodeURIComponent(path);
 
   const follow = (href: string) => (e: React.MouseEvent) => {
     if (isModifiedClick(e)) return;
@@ -90,9 +92,9 @@ export default function PathBar() {
       <div className="flex items-center gap-1">
         <code
           className="max-w-72 truncate rounded-md bg-white px-2 py-0.5 font-mono text-[11px] text-slate-500 ring-1 ring-slate-200"
-          title={path}
+          title={displayPath}
         >
-          {path}
+          {displayPath}
         </code>
         <Tooltip title={copied ? "Copied!" : "Copy link to this page"}>
           <IconButton size="small" aria-label="Copy link to this page" onClick={copyLink}>
