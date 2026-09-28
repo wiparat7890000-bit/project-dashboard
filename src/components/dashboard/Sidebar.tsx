@@ -42,13 +42,13 @@ export default function Sidebar() {
         </button>
 
         <label className="mb-3 block">
-          <span className="mb-1.5 block px-1 text-xs font-semibold uppercase tracking-widest text-slate-400">Department</span>
+          <span className="mb-1.5 block px-1 text-xs font-semibold uppercase tracking-widest text-slate-400">Teams</span>
           <select
             value={filter}
             onChange={(e) => setDeptFilter(e.target.value)}
             className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-slate-200 focus:border-sky-500 focus:outline-none"
           >
-            <option value="">— All Departments —</option>
+            <option value="">— All Teams —</option>
             {usedDepts.map((d) => (
               <option key={d} value={d}>
                 {d}
@@ -61,7 +61,7 @@ export default function Sidebar() {
         <div className="max-h-[calc(100vh-280px)] space-y-1 overflow-y-auto">
           {!visible.length && (
             <div className="px-3 py-2 text-xs text-slate-500">
-              {filter ? "ไม่มีโปรเจกต์ใน Department นี้" : historyProjects.length ? "All projects are finished" : "No projects yet"}
+              {filter ? "ไม่มีโปรเจกต์ใน Team นี้" : historyProjects.length ? "All projects are finished" : "No projects yet"}
             </div>
           )}
           {visible.map((p) => {

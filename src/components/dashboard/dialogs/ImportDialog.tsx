@@ -26,7 +26,7 @@ type ImportTab = "json" | "excel" | "template";
 
 const CSV_HINTS: Record<CsvType, string> = {
   tasks: "name, owner, dev, phase, startDate, endDate, status, priority, progress, notes, projectName",
-  projects: "name, startDate, endDate, description, owner, department",
+  projects: "name, startDate, endDate, description, owner, team, priority",
 };
 
 export default function ImportDialog({ open, onClose }: { open: boolean; onClose: () => void }) {

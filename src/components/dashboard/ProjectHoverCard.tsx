@@ -19,7 +19,7 @@ export default function ProjectHoverCard({ project: p, stats: s }: { project: Pr
         <ColorDot color={p.color} size="md" />
         <span className="text-[13px] font-bold text-slate-100">{p.name}</span>
       </div>
-      {p.department && <div className="mb-2 font-semibold text-sky-300">🏢 {p.department}</div>}
+      {p.department && <div className="mb-2 font-semibold text-sky-300">👥 {p.department}</div>}
       {p.description && <div className="mb-2 leading-normal">{p.description}</div>}
       {p.owner && (
         <div className="mb-1.5 text-slate-300">

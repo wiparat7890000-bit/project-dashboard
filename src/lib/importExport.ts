@@ -106,7 +106,7 @@ export function normalizeProject(input: unknown, index: number): Project {
     name: str(p.name) || "Untitled Project",
     description: str(p.description ?? p.desc),
     owner: str(p.owner),
-    department: str(p.department),
+    department: str(p.department ?? p.team ?? p.teams),
     priority: normPriority(p.priority),
     startDate: normDate(p.startDate ?? p.start),
     endDate: normDate(p.endDate ?? p.end),
@@ -288,7 +288,7 @@ function importCsvData(raw: string, type: CsvType, merge: boolean, current: Dash
       endDate: normDate(r.enddate || r.end),
       description: r.description || r.desc || "",
       owner: r.owner || "",
-      department: r.department || r.dept || "",
+      department: r.team || r.teams || r.department || r.dept || "",
       priority: normPriority(r.priority),
       color: colorFor(base + i),
     }));
@@ -366,7 +366,7 @@ const CSV_TEMPLATES: Record<CsvType, string> = {
     '"Development","Chai P.","Chai P.,Mongkol R.","Development",2025-05-01,2025-09-30,Plan,Medium,0,,ERP System Upgrade',
   ].join("\n"),
   projects: [
-    "name,startDate,endDate,description,owner,department,priority",
+    "name,startDate,endDate,description,owner,team,priority",
     "ERP System Upgrade,2025-01-01,2025-12-31,Upgrade internal ERP platform,Somchai K.,Information Technology,High",
     "Website Redesign,2025-02-01,2025-06-30,Redesign corporate website,Apinya W.,Marketing,Medium",
   ].join("\n"),

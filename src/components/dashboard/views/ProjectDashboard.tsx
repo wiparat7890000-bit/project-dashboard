@@ -159,7 +159,7 @@ function ProjectHeader({ project, overview }: { project: Project; overview: Proj
           </div>
           <h2 className="text-xl font-bold leading-snug">{project.name}</h2>
           {project.description && <div className="mt-1 text-sm text-white/75">{project.description}</div>}
-          {project.department && <div className="mt-2 text-xs text-white/60">🏢 {project.department}</div>}
+          {project.department && <div className="mt-2 text-xs text-white/60">👥 Team: {project.department}</div>}
         </div>
         <div className="flex flex-col items-end gap-2">
           <Tooltip title="Record status, health, achievements, issues and next steps">

@@ -61,7 +61,7 @@ export default function ProjectDialog({ open, projectId, onClose }: Props) {
   };
 
   const removeDept = (name: string) => {
-    if (!confirm(`ลบ "${name}" ออกจากรายชื่อ Department?`)) return;
+    if (!confirm(`ลบ "${name}" ออกจากรายชื่อ Teams?`)) return;
     setDeptList(data.deptList.filter((d) => d !== name));
     if (form.department === name) set("department", "");
   };
@@ -115,7 +115,7 @@ export default function ProjectDialog({ open, projectId, onClose }: Props) {
       </div>
 
       <div>
-        <FieldLabel action={<LinkAction onClick={() => setShowDeptManager((v) => !v)}>⚙ จัดการ Department</LinkAction>}>Department</FieldLabel>
+        <FieldLabel action={<LinkAction onClick={() => setShowDeptManager((v) => !v)}>⚙ จัดการ Teams</LinkAction>}>Teams</FieldLabel>
         <TextField select fullWidth size="small" value={form.department} onChange={(e) => set("department", e.target.value)} slotProps={{ select: { displayEmpty: true } }}>
           <MenuItem value="">— ไม่ระบุ —</MenuItem>
           {deptOptions.map((d) => (
@@ -126,7 +126,7 @@ export default function ProjectDialog({ open, projectId, onClose }: Props) {
         </TextField>
         <Collapse in={showDeptManager}>
           <div className="mt-2 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <div className="text-xs font-semibold text-slate-600">จัดการรายชื่อ Department</div>
+            <div className="text-xs font-semibold text-slate-600">จัดการรายชื่อ Teams</div>
             <div className="max-h-36 space-y-1 overflow-y-auto">
               {data.deptList.length ? (
                 data.deptList.map((d) => (
@@ -138,14 +138,14 @@ export default function ProjectDialog({ open, projectId, onClose }: Props) {
                   </div>
                 ))
               ) : (
-                <div className="px-2 text-xs text-slate-400">ยังไม่มี Department</div>
+                <div className="px-2 text-xs text-slate-400">ยังไม่มี Team</div>
               )}
             </div>
             <div className="flex gap-2">
               <TextField
                 size="small"
                 fullWidth
-                placeholder="ชื่อ Department ใหม่..."
+                placeholder="ชื่อ Team ใหม่..."
                 value={newDept}
                 onChange={(e) => setNewDept(e.target.value)}
                 onKeyDown={(e) => {

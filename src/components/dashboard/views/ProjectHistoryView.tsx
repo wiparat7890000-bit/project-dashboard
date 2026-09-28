@@ -121,7 +121,7 @@ export default function ProjectHistoryView() {
             <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 px-5 py-4">
               <TextField
                 size="small"
-                placeholder="Search project, owner, department…"
+                placeholder="Search project, owner, team…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="min-w-64 flex-1"
@@ -143,9 +143,9 @@ export default function ProjectHistoryView() {
                   value={dept}
                   onChange={(e) => setDept(e.target.value)}
                   className="min-w-44"
-                  slotProps={{ select: { displayEmpty: true }, htmlInput: { "aria-label": "Filter by department" } }}
+                  slotProps={{ select: { displayEmpty: true }, htmlInput: { "aria-label": "Filter by team" } }}
                 >
-                  <MenuItem value="">All Departments</MenuItem>
+                  <MenuItem value="">All Teams</MenuItem>
                   {departments.map((d) => (
                     <MenuItem key={d} value={d}>
                       {d}
