@@ -19,6 +19,7 @@ import {
   importJson,
   type CsvType,
 } from "@/lib/importExport";
+import { exportToExcel } from "@/lib/exportExcel";
 import { useDashboard } from "../DashboardContext";
 import FormDialog from "./FormDialog";
 
@@ -104,6 +105,13 @@ export default function ImportDialog({ open, onClose }: { open: boolean; onClose
           <TemplateRow title="📄 JSON Template" desc="โครงสร้าง JSON พร้อมตัวอย่าง" action="Download" onClick={downloadJsonTemplate} />
           <TemplateRow title="📊 Excel Tasks Template" desc="CSV template สำหรับ tasks (เปิดใน Excel ได้)" action="Download" onClick={() => downloadCsvTemplate("tasks")} />
           <TemplateRow title="📊 Excel Projects Template" desc="CSV template สำหรับ projects" action="Download" onClick={() => downloadCsvTemplate("projects")} />
+          <TemplateRow
+            title="📗 Export to Excel"
+            desc="ไฟล์ .xlsx: Summary, Projects, Tasks, Project Updates"
+            action="Export"
+            color="success"
+            onClick={() => exportToExcel(data).catch((e) => setError("❌ " + (e as Error).message))}
+          />
           <TemplateRow title="💾 Export ข้อมูลปัจจุบัน" desc="Backup เป็น JSON เพื่อ import ภายหลัง" action="Export" color="success" onClick={() => exportData(data)} />
         </div>
       )}
