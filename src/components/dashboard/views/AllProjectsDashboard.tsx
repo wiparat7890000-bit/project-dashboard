@@ -15,10 +15,13 @@ import {
 } from "@/lib/utils";
 import { useDashboard } from "../DashboardContext";
 import { ColorDot, HealthIndicator, ProjectStatusBadge } from "../ui/Badges";
+import { Pager, usePagination } from "../ui/Pager";
 import { DaysLeft, Donut, KpiCard, Panel, ProgressBar, SectionHeading, StackedBar, type Kpi } from "../ui/Primitives";
 import TaskTable from "./TaskTable";
 
 const TABLE_LIMIT = 15;
+/** Projects per page in "Progress by Project" and "Project Cards". */
+const PAGE_SIZE = 6;
 
 export default function AllProjectsDashboard() {
   const { data, activeProjects: projects, activeTasks: tasks, historyProjects, selectProject, openProjectDialog, setTab } = useDashboard();
@@ -30,6 +33,8 @@ export default function AllProjectsDashboard() {
     const overview = getProjectOverview(p, tasks, data.updates);
     return { project: p, stats: overview.stats, overview };
   });
+  const progressPages = usePagination(stats, PAGE_SIZE);
+  const cardPages = usePagination(stats, PAGE_SIZE);
 
   const kpis: Kpi[] = [
     { label: "Active Projects", value: projects.length, icon: "🗂️", bg: "bg-indigo-50", border: "border-indigo-200" },
@@ -73,10 +78,10 @@ export default function AllProjectsDashboard() {
           </div>
         </Panel>
 
-        <Panel className="p-6 lg:col-span-2">
+        <Panel className="flex flex-col p-6 lg:col-span-2">
           <div className="mb-4 text-sm font-semibold text-slate-600">Progress by Project</div>
-          <div className="space-y-4">
-            {stats.map(({ project: p, stats: s }) => (
+          <div key={progressPages.page} className="animate-slide-in space-y-4">
+            {progressPages.pageItems.map(({ project: p, stats: s }) => (
               <button key={p.id} type="button" className="block w-full text-left" onClick={() => selectProject(p.id)}>
                 <div className="mb-1 flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -96,6 +101,7 @@ export default function AllProjectsDashboard() {
             ))}
             {!projects.length && <div className="py-4 text-center text-sm text-slate-400">No projects yet</div>}
           </div>
+          <Pager {...progressPages} noun="projects" className="mt-auto border-t border-slate-100 pt-4" />
         </Panel>
       </div>
 
@@ -104,8 +110,8 @@ export default function AllProjectsDashboard() {
           Project Cards
         </SectionHeading>
       </div>
-      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {stats.map(({ project: p, stats: s, overview }) => (
+      <div key={cardPages.page} className={`${cardPages.pageCount > 1 ? "mb-4" : "mb-6"} grid animate-slide-in grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3`}>
+        {cardPages.pageItems.map(({ project: p, stats: s, overview }) => (
           <Panel
             key={p.id}
             role="button"
@@ -164,6 +170,7 @@ export default function AllProjectsDashboard() {
           </div>
         )}
       </div>
+      <Pager {...cardPages} noun="projects" className="mb-6" />
 
       <Panel className="overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-6 py-4">
