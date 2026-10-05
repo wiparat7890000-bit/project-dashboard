@@ -1,27 +1,5 @@
 import type { HealthStatus, Phase, Priority, ProjectStatus, Status } from "./types";
 
-export const DEV_LIST_DEFAULT = [
-  "Apinya W.",
-  "Chai P.",
-  "Dr. Wanchai S.",
-  "Mongkol R.",
-  "Nattaya P.",
-  "Pimchanok T.",
-  "Siriporn K.",
-  "Somchai K.",
-];
-
-export const DEPT_LIST_DEFAULT = [
-  "Information Technology",
-  "Finance",
-  "Human Resources",
-  "Operations",
-  "Marketing",
-  "Sales",
-  "Engineering",
-  "Management",
-];
-
 /** Default colors assigned to new/imported projects in rotation. */
 export const COLORS = [
   "#0ea5e9", "#8b5cf6", "#f59e0b", "#10b981",
@@ -121,12 +99,3 @@ export const HEALTH_STYLE: Record<HealthStatus, TagStyle & { dot: string; emoji:
 };
 
 export const NO_ISSUE_TEXT = "No outstanding issue";
-
-export const STORAGE_KEYS = {
-  projects: "isd_projects",
-  tasks: "isd_tasks",
-  updates: "isd_project_updates",
-  devList: "isd_dev_list",
-  deptList: "isd_dept_list",
-  phaseList: "isd_phase_list",
-} as const;

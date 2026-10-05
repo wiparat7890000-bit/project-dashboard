@@ -38,5 +38,3 @@ export function diffData(prev: DashboardData, next: DashboardData): SyncPayload 
   };
   return Object.values(payload).some((v) => v !== undefined) ? payload : null;
 }
-
-export const EMPTY_DATA: DashboardData = { projects: [], tasks: [], updates: [], devList: [], deptList: [], phaseList: [] };

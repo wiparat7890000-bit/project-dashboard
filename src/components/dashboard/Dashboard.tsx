@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import Alert from "@mui/material/Alert";
+import AlertTitle from "@mui/material/AlertTitle";
+import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Snackbar from "@mui/material/Snackbar";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import { buildPath, isModifiedClick, parsePath, projectSlugs, resolveProjectKey, samePath, TAB_LABEL } from "@/lib/routes";
-import { connectRemote, updateData, useDashboardData } from "@/lib/store";
+import { loadData, updateData, useDashboardData, useSyncState, type SyncState } from "@/lib/store";
 import { ALL_PROJECTS, type DashboardData, type ViewTab } from "@/lib/types";
 import { splitProjects, uid } from "@/lib/utils";
 import { DashboardContext, type DashboardContextValue } from "./DashboardContext";
@@ -27,16 +29,51 @@ import TimelineView from "./views/TimelineView";
 
 export default function Dashboard() {
   const data = useDashboardData();
-  if (!data) {
-    // Server render / first paint: data lives in localStorage, so wait for the client.
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100">
-        <title>Project Dashboard | ISD</title>
-        <CircularProgress />
-      </div>
-    );
-  }
+  const sync = useSyncState();
+
+  // All data comes from the database; nothing is shown until it has loaded.
+  useEffect(() => {
+    void loadData();
+  }, []);
+
+  if (!data) return <LoadScreen status={sync.status} message={sync.message} />;
   return <DashboardShell data={data} />;
+}
+
+/** Shown while the database loads, or instead of the dashboard when it can't be loaded. */
+function LoadScreen({ status, message }: { status: SyncState["status"]; message?: string }) {
+  const failed = status === "unconfigured" || status === "error";
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
+      <title>Project Dashboard | ISD</title>
+      {!failed ? (
+        <div role="status" className="flex flex-col items-center gap-3 text-sm font-semibold text-slate-500">
+          <CircularProgress />
+          Loading data from the database…
+        </div>
+      ) : (
+        <Alert
+          severity={status === "unconfigured" ? "warning" : "error"}
+          className="max-w-lg"
+          action={
+            <Button color="inherit" size="small" onClick={() => void loadData()}>
+              Retry
+            </Button>
+          }
+        >
+          <AlertTitle>{status === "unconfigured" ? "Database not configured" : "Can't load data from the database"}</AlertTitle>
+          {status === "unconfigured" ? (
+            <>
+              Set <code>DATABASE_URL</code> to your Postgres connection string (in <code>.env.local</code>, or in the
+              hosting provider&apos;s environment variables), run <code>npm run db:migrate</code>, then restart the app.
+            </>
+          ) : (
+            (message ?? "Database unavailable")
+          )}
+        </Alert>
+      )}
+    </div>
+  );
 }
 
 /** Dialog state; `key` changes on every open so the form re-initializes. */
@@ -88,13 +125,6 @@ function DashboardShell({ data }: { data: DashboardData }) {
   const [importDialog, setImportDialog] = useState<DialogState>(closedDialog);
   const [updateDialog, setUpdateDialog] = useState<DialogState>(closedDialog);
   const [toast, setToast] = useState<{ open: boolean; message: string }>({ open: false, message: "" });
-
-  // Use the Postgres database when the server has DATABASE_URL; otherwise stay browser-only.
-  useEffect(() => {
-    void connectRemote().then(({ uploaded }) => {
-      if (uploaded) setToast({ open: true, message: `Database was empty — saved ${uploaded} projects from this browser to it.` });
-    });
-  }, []);
 
   // Fall back to "All" if the selected project was deleted or replaced by an import.
   const activeProject = data.projects.find((p) => p.id === selectedId);
