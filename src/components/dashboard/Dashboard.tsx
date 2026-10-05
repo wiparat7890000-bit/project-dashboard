@@ -8,7 +8,7 @@ import Snackbar from "@mui/material/Snackbar";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import { buildPath, isModifiedClick, parsePath, projectSlugs, resolveProjectKey, samePath, TAB_LABEL } from "@/lib/routes";
-import { updateData, useDashboardData } from "@/lib/store";
+import { connectRemote, updateData, useDashboardData } from "@/lib/store";
 import { ALL_PROJECTS, type DashboardData, type ViewTab } from "@/lib/types";
 import { splitProjects, uid } from "@/lib/utils";
 import { DashboardContext, type DashboardContextValue } from "./DashboardContext";
@@ -88,6 +88,13 @@ function DashboardShell({ data }: { data: DashboardData }) {
   const [importDialog, setImportDialog] = useState<DialogState>(closedDialog);
   const [updateDialog, setUpdateDialog] = useState<DialogState>(closedDialog);
   const [toast, setToast] = useState<{ open: boolean; message: string }>({ open: false, message: "" });
+
+  // Use the Postgres database when the server has DATABASE_URL; otherwise stay browser-only.
+  useEffect(() => {
+    void connectRemote().then(({ uploaded }) => {
+      if (uploaded) setToast({ open: true, message: `Database was empty — saved ${uploaded} projects from this browser to it.` });
+    });
+  }, []);
 
   // Fall back to "All" if the selected project was deleted or replaced by an import.
   const activeProject = data.projects.find((p) => p.id === selectedId);

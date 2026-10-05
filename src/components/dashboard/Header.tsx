@@ -11,6 +11,7 @@ import SpaceDashboardOutlinedIcon from "@mui/icons-material/SpaceDashboardOutlin
 import { formatDate, todayISO } from "@/lib/utils";
 import { useDashboard } from "./DashboardContext";
 import ExportMenu from "./ExportMenu";
+import SyncBadge from "./SyncBadge";
 
 const ghostSx = {
   color: "#fff",
@@ -52,6 +53,7 @@ export default function Header() {
               {formatDate(todayISO())}
             </div>
           </Tooltip>
+          <SyncBadge />
           <span aria-hidden className="mx-1 hidden h-8 w-px bg-white/15 sm:block" />
           <Tooltip title="Import from JSON or CSV, or download templates">
             <Button variant="outlined" startIcon={<FileUploadOutlinedIcon />} onClick={openImportDialog} sx={ghostSx}>
